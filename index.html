@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mafia Web Game</title>
+  <!-- PeerJS for Direct WebRTC Cross-Device Connections -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root {
@@ -12,6 +13,7 @@
       --accent-red: #ef4444;
       --accent-blue: #3b82f6;
       --accent-green: #22c55e;
+      --accent-yellow: #eab308;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
     }
@@ -47,12 +49,24 @@
     .status-bar {
       text-align: center;
       font-size: 0.85rem;
-      padding: 0.5rem;
+      padding: 0.75rem;
       border-radius: 6px;
       background: #0f172a;
       margin-bottom: 1rem;
       color: var(--text-muted);
       border: 1px solid #334155;
+      word-wrap: break-word;
+    }
+
+    .warning-banner {
+      background: rgba(234, 179, 8, 0.2);
+      border: 1px solid var(--accent-yellow);
+      color: var(--accent-yellow);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      text-align: center;
+      font-weight: bold;
     }
 
     .form-group { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -120,6 +134,10 @@
 <body>
 
   <div class="container">
+    <div id="file-warning" class="warning-banner hidden">
+      ⚠️ WARNING: You are running this file locally (file://). Phones will NOT be able to connect due to browser security. Please host this online to play.
+    </div>
+
     <div id="connection-status" class="status-bar">Select your device role to start</div>
 
     <!-- LANDING VIEW -->
@@ -184,7 +202,7 @@
         </div>
         <div class="form-group">
           <label>Room Code:</label>
-          <input type="text" id="player-room-input" placeholder="4-Letter Code">
+          <input type="text" id="player-room-input" placeholder="4-Letter Code" autocomplete="off">
         </div>
         <button id="btn-join" onclick="joinGame()">Join Game</button>
       </div>
@@ -203,6 +221,11 @@
   </div>
 
   <script>
+    // --- SECURITY CHECK FOR LOCAL FILES ---
+    if (window.location.protocol === 'file:') {
+      document.getElementById('file-warning').classList.remove('hidden');
+    }
+
     let isHost = false;
     let peer = null;
     let hostConnection = null;
@@ -210,14 +233,16 @@
     let localPlayerId = null;
     let roomCode = '';
 
-    // STUN Servers guarantee connections across cellular networks & firewalls
+    // Robust STUN servers for cross-network (Cellular vs Wifi) connectivity
     const peerConfig = {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun.services.mozilla.com' }
         ]
-      }
+      },
+      debug: 2 
     };
 
     let state = {
@@ -232,9 +257,12 @@
     };
 
     function updateStatus(msg, isSuccess = false) {
+      console.log("STATUS UPDATE:", msg);
       const el = document.getElementById('connection-status');
       el.innerText = msg;
-      el.style.color = isSuccess ? 'var(--accent-green)' : (msg.includes('🔴') ? 'var(--accent-red)' : 'var(--text-main)');
+      if (isSuccess) el.style.color = 'var(--accent-green)';
+      else if (msg.includes('🔴') || msg.includes('Error')) el.style.color = 'var(--accent-red)';
+      else el.style.color = 'var(--text-main)';
     }
 
     function switchRole(role) {
@@ -266,27 +294,34 @@
       state.roomCode = roomCode;
       document.getElementById('screen-room-code').innerText = roomCode;
 
-      // Note: QR code scanning requires this file to be hosted on a web server, not a local file path
-      const currentUrl = window.location.origin + window.location.pathname + '?role=player&code=' + roomCode;
+      // Ensure QR Code url uses the hosted web address, ignoring local file paths
+      let baseUrl = window.location.href.split('?')[0];
+      const currentUrl = baseUrl + '?role=player&code=' + roomCode;
       const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentUrl)}`;
       document.getElementById('qr-image').src = qrApiUrl;
 
       updateStatus(`Initializing Display Host Server (${roomCode})...`);
 
-      // Using lowercase to prevent case mismatch bugs
       const hostId = `mafia-${roomCode.toLowerCase()}`;
-      peer = new Peer(hostId, peerConfig);
+      
+      try {
+        peer = new Peer(hostId, peerConfig);
+      } catch (err) {
+        updateStatus(`🔴 Critical setup error: ${err.message}`);
+        return;
+      }
 
       peer.on('open', (id) => {
-        updateStatus(`🟢 Display Screen Online! Room Code: ${roomCode}`, true);
+        updateStatus(`🟢 Display Screen Online! Ready for players.`, true);
         render();
       });
 
       peer.on('connection', (conn) => {
+        updateStatus(`Incoming connection attempt from a player...`);
         playerConnections.push(conn);
 
-        // Instantly sync state to the new connection
         conn.on('open', () => {
+          updateStatus(`🟢 Player data channel connected.`);
           conn.send({ type: 'STATE_UPDATE', state: state });
         });
 
@@ -297,20 +332,27 @@
         conn.on('close', () => {
           playerConnections = playerConnections.filter(c => c !== conn);
         });
+
+        conn.on('error', (err) => {
+          updateStatus(`🔴 Host Connection Error: ${err.message}`);
+        });
       });
 
       peer.on('error', (err) => {
-        console.error("Peer Error:", err);
-        updateStatus(`🔴 Connection Error: ${err.type}`);
+        updateStatus(`🔴 Host Peer Error [${err.type}]: ${err.message}`);
+      });
+      
+      peer.on('disconnected', () => {
+        updateStatus(`🔴 Host disconnected from signaling server. Reconnecting...`);
+        peer.reconnect();
       });
     }
 
     function handleHostIncomingMessage(conn, msg) {
       if (msg.type === 'JOIN_REQUEST') {
-        // If player re-joins after refreshing browser, update their ID
         const existingPlayer = state.players.find(p => p.name.toLowerCase() === msg.player.name.toLowerCase());
         if (existingPlayer) {
-          existingPlayer.id = msg.player.id;
+          existingPlayer.id = msg.player.id; // Update ID if they reconnected
         } else {
           state.players.push(msg.player);
         }
@@ -346,22 +388,26 @@
       localPlayerId = 'p_' + Math.random().toString(36).substr(2, 9);
       const newPlayer = { id: localPlayerId, name: name, isAlive: true, isMafia: false, isModerator: false };
 
-      peer = new Peer(peerConfig);
+      try {
+        peer = new Peer(peerConfig);
+      } catch (err) {
+        updateStatus(`🔴 Setup Error: ${err.message}`);
+        document.getElementById('btn-join').disabled = false;
+        return;
+      }
 
-      peer.on('open', () => {
+      peer.on('open', (id) => {
         updateStatus(`Locating Display Screen (${inputCode})...`);
         
-        // Connect to host enforcing lowercase
         const targetId = `mafia-${inputCode.toLowerCase()}`;
         hostConnection = peer.connect(targetId, { reliable: true });
 
-        // Timeout handler to prevent infinite hanging
         let connectTimeout = setTimeout(() => {
           if (!hostConnection || !hostConnection.open) {
-            updateStatus(`🔴 Connection timed out. Is the Display Screen open and room code correct?`);
+            updateStatus(`🔴 Connection timed out. Ensure the Display Screen is open and code is correct.`);
             document.getElementById('btn-join').disabled = false;
           }
-        }, 5000);
+        }, 8000);
 
         hostConnection.on('open', () => {
           clearTimeout(connectTimeout);
@@ -384,11 +430,17 @@
         hostConnection.on('close', () => {
           updateStatus(`🔴 Disconnected from Main Display`);
         });
+
+        hostConnection.on('error', (err) => {
+          clearTimeout(connectTimeout);
+          updateStatus(`🔴 Connection Error: ${err.message}`);
+          document.getElementById('btn-join').disabled = false;
+        });
       });
 
       peer.on('error', (err) => {
+        updateStatus(`🔴 Peer Error [${err.type}]: ${err.message}`);
         document.getElementById('btn-join').disabled = false;
-        updateStatus(`🔴 Peer Error: Could not connect.`);
       });
     }
 
