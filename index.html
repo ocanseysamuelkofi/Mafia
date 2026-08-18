@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mafia Web Game</title>
-  <!-- PeerJS Library for Cross-Device WebRTC Sync -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- Public MQTT library for real-time cross-device communication -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -44,6 +44,16 @@
     .badge-red { background: var(--accent-red); color: white; }
     .badge-blue { background: var(--accent-blue); color: white; }
     .badge-green { background: var(--accent-green); color: white; }
+
+    .status-bar {
+      text-align: center;
+      font-size: 0.85rem;
+      padding: 0.4rem;
+      border-radius: 6px;
+      background: #0f172a;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+    }
 
     .form-group { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
     input, select, button {
@@ -90,13 +100,13 @@
 
     .player-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.75rem;
       margin-top: 1rem;
     }
     .player-card {
       background: #0f172a;
-      padding: 1rem;
+      padding: 0.85rem;
       border-radius: 8px;
       text-align: center;
       border: 1px solid #334155;
@@ -109,12 +119,14 @@
 <body>
 
   <div class="container">
+    <div id="connection-status" class="status-bar">Connecting to game cloud...</div>
+
     <!-- ROLE SELECTOR -->
     <div id="view-landing">
       <h1>MAFIA GAME</h1>
-      <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Select device role</p>
+      <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Select device role to begin</p>
       <div style="display: flex; flex-direction: column; gap: 1rem;">
-        <button onclick="switchRole('screen')">Open Host / Display Screen</button>
+        <button onclick="switchRole('screen')">Open Screen Display View</button>
         <button onclick="switchRole('player')" style="background: #475569;">Join as Player</button>
       </div>
     </div>
@@ -125,10 +137,10 @@
       <div class="qr-box">
         <h3>SCAN TO JOIN GAME</h3>
         <img id="qr-image" src="" alt="QR Code" width="180" height="180">
-        <p>Room Code: <strong id="screen-room-code" style="color: var(--accent-blue); font-size: 1.4rem;">Connecting...</strong></p>
+        <p>Or Enter Code: <strong id="screen-room-code" style="color: var(--accent-blue); font-size: 1.4rem;">----</strong></p>
       </div>
 
-      <div id="screen-announcement" class="announcement">Waiting for host connection...</div>
+      <div id="screen-announcement" class="announcement">Waiting for players to join...</div>
 
       <div id="moderator-selection-panel">
         <h3>Select Game Moderator</h3>
@@ -172,7 +184,7 @@
         </div>
         <div class="form-group">
           <label>Room Code:</label>
-          <input type="text" id="player-room-input" placeholder="e.g. 4-letter code">
+          <input type="text" id="player-room-input" placeholder="4-Letter Code">
         </div>
         <button onclick="joinGame()">Join Game</button>
       </div>
@@ -191,15 +203,16 @@
   </div>
 
   <script>
-    let peer = null;
-    let connections = []; // Host keeps connection to all players
-    let hostConnection = null; // Player connection to host
+    // --- CROSS-DEVICE MQTT MESSAGING ENGINE ---
+    const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+    const localChannel = new BroadcastChannel('mafia_game_channel');
 
     let isHost = false;
     let localPlayerId = null;
+    let roomCode = 'MFA1';
 
     let state = {
-      roomCode: '',
+      roomCode: roomCode,
       phase: 'LOBBY',
       players: [],
       moderatorId: null,
@@ -209,8 +222,66 @@
       announcement: 'Waiting for players to join...'
     };
 
-    function generateRoomCode() {
-      return Math.random().toString(36).substring(2, 6).toUpperCase();
+    mqttClient.on('connect', () => {
+      document.getElementById('connection-status').innerText = '🟢 Connected to Cloud Game Server';
+      document.getElementById('connection-status').style.color = 'var(--accent-green)';
+      subscribeToRoom();
+    });
+
+    mqttClient.on('message', (topic, message) => {
+      handleIncomingMessage(JSON.parse(message.toString()));
+    });
+
+    localChannel.onmessage = (event) => {
+      handleIncomingMessage(event.data);
+    };
+
+    function sendMessage(msg) {
+      msg.roomCode = state.roomCode;
+      const strMsg = JSON.stringify(msg);
+      if (mqttClient.connected) {
+        mqttClient.publish(`mafia_game/${state.roomCode}`, strMsg);
+      }
+      localChannel.postMessage(msg);
+    }
+
+    function subscribeToRoom() {
+      if (mqttClient.connected && state.roomCode) {
+        mqttClient.subscribe(`mafia_game/${state.roomCode}`);
+      }
+    }
+
+    function handleIncomingMessage(msg) {
+      if (msg.roomCode !== state.roomCode) return;
+
+      if (msg.type === 'REQUEST_STATE' && isHost) {
+        broadcastState();
+      } 
+      else if (msg.type === 'JOIN_REQUEST' && isHost) {
+        const exists = state.players.some(p => p.id === msg.player.id || p.name.toLowerCase() === msg.player.name.toLowerCase());
+        if (!exists) {
+          state.players.push(msg.player);
+          broadcastState();
+        }
+      } 
+      else if (msg.type === 'MAFIA_TARGET' && isHost) {
+        state.mafiaTarget = msg.targetId;
+        state.announcement = "The MAFIA has made a secret choice...";
+        broadcastState();
+      }
+      else if (msg.type === 'SUBMIT_VOTE' && isHost) {
+        state.votes[msg.voterId] = msg.targetId;
+        broadcastState();
+      }
+      else if (msg.type === 'STATE_UPDATE') {
+        state = msg.state;
+        render();
+      }
+    }
+
+    function broadcastState() {
+      sendMessage({ type: 'STATE_UPDATE', state: state });
+      render();
     }
 
     function switchRole(role) {
@@ -220,129 +291,72 @@
       document.getElementById('view-player').classList.add('hidden');
 
       if (role === 'screen') {
+        isHost = true;
+        // Generate random 4-letter room code
+        state.roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        subscribeToRoom();
+
         document.getElementById('view-screen').classList.remove('hidden');
-        initHostScreen();
+        initScreenView();
       } else if (role === 'moderator') {
         document.getElementById('view-moderator').classList.remove('hidden');
       } else if (role === 'player') {
         document.getElementById('view-player').classList.remove('hidden');
         
-        // Auto-fill room code from URL parameter if scanned from QR code
+        // Auto-fill room code from URL parameters if scanned via QR Code
         const urlParams = new URLSearchParams(window.location.search);
-        const codeParam = urlParams.get('code');
-        if (codeParam) {
-          document.getElementById('player-room-input').value = codeParam;
+        const codeFromUrl = urlParams.get('code');
+        if (codeFromUrl) {
+          document.getElementById('player-room-input').value = codeFromUrl;
         }
       }
     }
 
-    // --- HOST / SCREEN INITIALIZATION ---
-    function initHostScreen() {
-      isHost = true;
-      state.roomCode = generateRoomCode();
+    function initScreenView() {
       document.getElementById('screen-room-code').innerText = state.roomCode;
-
-      // QR Code pointing to this URL with player role and code pre-filled
-      const joinUrl = window.location.href.split('?')[0] + '?role=player&code=' + state.roomCode;
-      document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrl)}`;
-
-      // Initialize Host Peer with Room Code as ID
-      peer = new Peer('mafia-room-' + state.roomCode);
-
-      peer.on('open', () => {
-        state.announcement = "Room ready! Scan QR code or enter room code to join.";
-        broadcastState();
-      });
-
-      peer.on('connection', (conn) => {
-        connections.push(conn);
-
-        conn.on('data', (data) => {
-          handleIncomingMessage(data, conn);
-        });
-      });
-
-      peer.on('error', (err) => {
-        console.error(err);
-        alert('Connection error: ' + err.type);
-      });
+      
+      // QR Code links directly to player join view with room parameter pre-filled
+      const currentUrl = window.location.origin + window.location.pathname + '?role=player&code=' + state.roomCode;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(currentUrl)}`;
+      document.getElementById('qr-image').src = qrApiUrl;
+      
+      broadcastState();
     }
 
-    // --- MESSAGE HANDLER (HOST) ---
-    function handleIncomingMessage(data, conn) {
-      if (data.type === 'PLAYER_JOIN') {
-        const newPlayer = { id: data.id, name: data.name, isAlive: true, isMafia: false, isModerator: false };
+    function joinGame() {
+      const name = document.getElementById('player-name-input').value.trim();
+      const inputCode = document.getElementById('player-room-input').value.trim().toUpperCase();
+
+      if (!name) return alert('Please enter your name');
+      if (!inputCode) return alert('Please enter the Room Code');
+
+      state.roomCode = inputCode;
+      subscribeToRoom();
+
+      localPlayerId = 'p_' + Math.random().toString(36).substr(2, 9);
+      const newPlayer = { id: localPlayerId, name: name, isAlive: true, isMafia: false, isModerator: false };
+
+      // Immediately set UI to active state
+      document.getElementById('player-login-form').classList.add('hidden');
+      document.getElementById('player-active-panel').classList.remove('hidden');
+      document.getElementById('player-display-name').innerText = name;
+
+      // Add locally first so the UI responds immediately
+      if (!state.players.some(p => p.id === localPlayerId)) {
         state.players.push(newPlayer);
-        broadcastState();
-      } else if (data.type === 'MAFIA_ACTION') {
-        state.mafiaTarget = data.targetId;
-        state.announcement = "The MAFIA has made a secret choice...";
-        broadcastState();
-      } else if (data.type === 'CAST_VOTE') {
-        state.votes[data.voterId] = data.targetId;
-        broadcastState();
       }
-    }
 
-    function broadcastState() {
-      // Send state to all connected player clients
-      connections.forEach(conn => {
-        if (conn.open) conn.send({ type: 'STATE_UPDATE', state: state });
-      });
+      // Request host screen to add player to official game state
+      sendMessage({ type: 'JOIN_REQUEST', player: newPlayer });
       render();
     }
 
-    // --- PLAYER JOIN LOGIC ---
-    function joinGame() {
-      const name = document.getElementById('player-name-input').value.trim();
-      const code = document.getElementById('player-room-input').value.trim().toUpperCase();
-
-      if (!name || !code) return alert('Please enter both your name and room code');
-
-      localPlayerId = 'p_' + Math.random().toString(36).substr(2, 7);
-
-      peer = new Peer();
-
-      peer.on('open', () => {
-        hostConnection = peer.connect('mafia-room-' + code);
-
-        hostConnection.on('open', () => {
-          hostConnection.send({ type: 'PLAYER_JOIN', id: localPlayerId, name: name });
-
-          document.getElementById('player-login-form').classList.add('hidden');
-          document.getElementById('player-active-panel').classList.remove('hidden');
-          document.getElementById('player-display-name').innerText = name;
-        });
-
-        hostConnection.on('data', (data) => {
-          if (data.type === 'STATE_UPDATE') {
-            state = data.state;
-            render();
-          }
-        });
-
-        hostConnection.on('error', () => {
-          alert('Could not connect to Host Room. Check room code.');
-        });
-      });
-    }
-
-    function submitMafiaTarget(targetId) {
-      if (hostConnection) hostConnection.send({ type: 'MAFIA_ACTION', targetId: targetId });
-    }
-
-    function submitVote(targetId) {
-      if (hostConnection) hostConnection.send({ type: 'CAST_VOTE', voterId: localPlayerId, targetId: targetId });
-    }
-
-    // --- HOST GAME CONTROLS ---
     function assignModerator() {
       const select = document.getElementById('mod-select-dropdown');
       const selectedId = select.value;
       if (!selectedId) return alert('Select a player to be Moderator!');
 
       state.moderatorId = selectedId;
-      
       const eligibleForMafia = state.players.filter(p => p.id !== selectedId);
       if (eligibleForMafia.length < 2) return alert('At least 3 players required (1 Moderator, 1 Mafia, 1+ Town)!');
 
@@ -354,7 +368,7 @@
         p.isMafia = (p.id === state.mafiaId);
       });
 
-      state.announcement = "Moderator assigned! Waiting for game start.";
+      state.announcement = "Moderator selected! Transferring control to Moderator Dashboard...";
       broadcastState();
     }
 
@@ -368,12 +382,11 @@
 
     function startDiscussionPhase() {
       if (!state.mafiaTarget) return alert("The Mafia hasn't chosen a target yet!");
-      
       const target = state.players.find(p => p.id === state.mafiaTarget);
       if (target) target.isAlive = false;
 
       state.phase = 'DAY_VOTING';
-      state.announcement = `${target.name} was eliminated during the night! Discuss and vote who the MAFIA is.`;
+      state.announcement = `${target.name} was eliminated during the night! Discuss and vote.`;
       broadcastState();
     }
 
@@ -409,16 +422,22 @@
       broadcastState();
     }
 
-    // --- RENDER FUNCTION ---
-    function render() {
-      const localPlayer = state.players.find(p => p.id === localPlayerId);
+    function submitMafiaTarget(targetId) {
+      sendMessage({ type: 'MAFIA_TARGET', targetId: targetId });
+    }
 
-      // Switch view if current player was designated as Moderator
+    function submitVote(targetId) {
+      sendMessage({ type: 'SUBMIT_VOTE', voterId: localPlayerId, targetId: targetId });
+    }
+
+    function render() {
+      // Automatic role transfer if this device was assigned as Moderator
+      const localPlayer = state.players.find(p => p.id === localPlayerId);
       if (localPlayer && localPlayer.isModerator && !document.getElementById('view-player').classList.contains('hidden')) {
         switchRole('moderator');
       }
 
-      // Update Screen Display
+      // 1. Render Screen Display
       document.getElementById('player-count').innerText = state.players.length;
       document.getElementById('screen-announcement').innerText = state.announcement;
 
@@ -444,7 +463,7 @@
         document.getElementById('moderator-selection-panel').classList.add('hidden');
       }
 
-      // Update Moderator View
+      // 2. Render Moderator View
       const mafiaPlayer = state.players.find(p => p.isMafia);
       document.getElementById('secret-mafia-name').innerText = mafiaPlayer ? mafiaPlayer.name : '[Assigned upon game start]';
 
@@ -478,7 +497,7 @@
         btnTally.classList.add('hidden');
       }
 
-      // Update Player View
+      // 3. Render Player View
       if (localPlayer) {
         const roleBadge = document.getElementById('player-role-badge');
         const actionBox = document.getElementById('player-action-box');
@@ -494,11 +513,14 @@
         }
 
         if (!localPlayer.isAlive) {
-          actionBox.innerText = ' You have been eliminated! (Spectator Mode)';
+          actionBox.innerText = 'You have been eliminated!';
           return;
         }
 
-        if (state.phase === 'NIGHT_MAFIA') {
+        if (state.phase === 'LOBBY') {
+          actionBox.innerText = 'Connected! Waiting for Moderator selection on Main Display...';
+        }
+        else if (state.phase === 'NIGHT_MAFIA') {
           if (localPlayer.isMafia) {
             actionBox.innerText = ' You are the MAFIA. Select a player to eliminate:';
             state.players.filter(p => p.isAlive && !p.isMafia && !p.isModerator).forEach(p => {
@@ -527,7 +549,7 @@
       }
     }
 
-    // Auto-route based on URL parameter
+    // Auto-detect role parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const roleParam = urlParams.get('role');
     if (roleParam) switchRole(roleParam);
