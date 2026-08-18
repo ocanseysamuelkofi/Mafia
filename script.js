@@ -1,16 +1,24 @@
-/* =========================================================
+/* =====================================================
    MAFIA GAME
-   Front-end prototype
-========================================================= */
+===================================================== */
 
 
-/* ================= GAME STATE ================= */
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
+const SITE_URL = "https://cdmafia.netlify.app/";
+
+const GAME_CODE = "MAFIA123";
+
+
+/* =====================================================
+   GAME STATE
+===================================================== */
 
 const game = {
 
-    code: "MAFIA123",
-
-    status: "LOBBY",
+    code: GAME_CODE,
 
     phase: "LOBBY",
 
@@ -20,482 +28,300 @@ const game = {
 
     mafia: null,
 
-    currentRound: 0,
+    round: 0,
 
     votes: {},
 
-    mafiaTarget: null
+    lastVoteEliminated: null,
+
+    mafiaEliminated: null
 
 };
 
 
-/* ================= PLAYER OBJECT ================= */
+/* =====================================================
+   CURRENT PLAYER
+===================================================== */
 
-function createPlayer(name) {
-
-    return {
-        id: Date.now() + Math.random(),
-        name: name,
-        role: "PLAYER",
-        alive: true,
-        joined: true
-    };
-
-}
+let currentPlayerId = null;
 
 
-/* ================= VIEW SWITCHING ================= */
+/* =====================================================
+   INITIALIZE
+===================================================== */
 
-function showScreen(view) {
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    document.querySelectorAll(".view").forEach(element => {
-        element.classList.remove("active");
+        generateQRCode();
+
+        updateScreen();
+
+        updateModerator();
+
+        setupGameFromURL();
+
+    }
+);
+
+
+/* =====================================================
+   QR CODE
+===================================================== */
+
+function generateQRCode() {
+
+    const qr = document.getElementById("qrcode");
+
+    if (!qr) return;
+
+    qr.innerHTML = "";
+
+    const joinURL =
+        SITE_URL +
+        "?game=" +
+        encodeURIComponent(game.code);
+
+    new QRCode(qr, {
+
+        text: joinURL,
+
+        width: 250,
+
+        height: 250,
+
+        colorDark: "#000000",
+
+        colorLight: "#ffffff",
+
+        correctLevel:
+            QRCode.CorrectLevel.H
+
     });
 
-    if (view === "screen") {
-        document.getElementById("screen-view").classList.add("active");
-    }
+}
 
-    if (view === "player") {
-        document.getElementById("player-view").classList.add("active");
-    }
 
-    if (view === "moderator") {
-        document.getElementById("moderator-view").classList.add("active");
+/* =====================================================
+   URL GAME CODE
+===================================================== */
+
+function setupGameFromURL() {
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const code =
+        params.get("game");
+
+    if (code) {
+
+        const input =
+            document.getElementById(
+                "player-name"
+            );
+
+        if (input) {
+
+            input.focus();
+
+        }
+
     }
 
 }
 
 
-/* ================= JOIN GAME ================= */
+/* =====================================================
+   SWITCH VIEW
+===================================================== */
+
+function showView(view) {
+
+    document
+        .querySelectorAll(".view")
+        .forEach(
+            element =>
+                element.classList.remove(
+                    "active"
+                )
+        );
+
+
+    if (view === "screen") {
+
+        document
+            .getElementById(
+                "screen-view"
+            )
+            .classList.add("active");
+
+    }
+
+
+    if (view === "player") {
+
+        document
+            .getElementById(
+                "player-view"
+            )
+            .classList.add("active");
+
+    }
+
+
+    if (view === "moderator") {
+
+        document
+            .getElementById(
+                "moderator-view"
+            )
+            .classList.add("active");
+
+    }
+
+}
+
+
+/* =====================================================
+   JOIN GAME
+===================================================== */
 
 function joinGame() {
 
-    const input = document.getElementById("player-name");
+    const input =
+        document.getElementById(
+            "player-name"
+        );
 
-    const name = input.value.trim();
+    const name =
+        input.value.trim();
+
 
     if (!name) {
-        alert("Please enter your name.");
+
+        alert(
+            "Please enter your name."
+        );
+
         return;
+
     }
 
-    if (game.players.some(
-        player => player.name.toLowerCase() === name.toLowerCase()
-    )) {
-        alert("That name is already being used.");
+
+    if (game.phase !== "LOBBY") {
+
+        alert(
+            "This game has already started."
+        );
+
         return;
+
     }
 
-    const player = createPlayer(name);
+
+    const alreadyExists =
+        game.players.some(
+            player =>
+                player.name.toLowerCase() ===
+                name.toLowerCase()
+        );
+
+
+    if (alreadyExists) {
+
+        alert(
+            "That name is already in the game."
+        );
+
+        return;
+
+    }
+
+
+    const player = {
+
+        id:
+            Date.now() +
+            Math.random(),
+
+        name: name,
+
+        role: "PLAYER",
+
+        alive: true
+
+    };
+
 
     game.players.push(player);
 
+    currentPlayerId =
+        player.id;
+
+
     input.value = "";
 
+
+    renderPlayerLobby();
+
     updateScreen();
 
     updateModerator();
 
-    showPlayerMessage(
-        `<div class="player-card">
+}
 
-            <h2>You're in!</h2>
 
-            <p style="color:#aaa;margin:20px 0;">
-                Welcome, ${escapeHTML(name)}
+/* =====================================================
+   PLAYER LOBBY
+===================================================== */
+
+function renderPlayerLobby() {
+
+    const player =
+        getCurrentPlayer();
+
+    if (!player) return;
+
+
+    document.getElementById(
+        "player-content"
+    ).innerHTML = `
+
+        <div class="player-page">
+
+            <div class="player-icon">
+                ✅
+            </div>
+
+            <h2>
+                You're in!
+            </h2>
+
+            <p>
+                Welcome,
+                <strong>
+                    ${escapeHTML(player.name)}
+                </strong>
             </p>
 
-            <div class="player-role innocent">
-                <div class="role-icon">⏳</div>
+            <div class="role-card innocent">
 
-                <div class="role-name">
-                    Waiting...
+                <div class="role-icon">
+                    ⏳
                 </div>
 
-                <div class="player-message">
-                    The moderator will be selected soon.
-                </div>
-            </div>
-
-        </div>`
-    );
-
-}
-
-
-/* ================= UPDATE SCREEN ================= */
-
-function updateScreen() {
-
-    const content = document.getElementById("screen-content");
-
-    if (game.phase === "LOBBY") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title">
-                    MAFIA
+                <div class="role-title">
+                    WAITING
                 </div>
 
-                <p class="subtitle">
-                    Scan the QR code to join the game
-                </p>
-
-                <div class="qr-code">
-                    <div class="qr-pattern"></div>
+                <div class="role-description">
+                    The moderator will start
+                    the game soon.
                 </div>
-
-                <p class="join-code">
-                    Game Code:
-                    <strong>${game.code}</strong>
-                </p>
-
-                <div class="screen-status">
-                    ${game.players.length}
-                    player(s) joined
-                </div>
-
-                <div style="
-                    margin-top:30px;
-                    color:#aaa;
-                    font-size:18px;
-                ">
-                    ${game.players.map(
-                        p => escapeHTML(p.name)
-                    ).join(" • ")}
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    if (game.phase === "MODERATOR_SELECTED") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title"
-                    style="font-size:70px;">
-                    MODERATOR
-                </div>
-
-                <p class="subtitle">
-                    ${escapeHTML(game.moderator.name)}
-                    has been selected
-                </p>
-
-                <div style="
-                    margin-top:40px;
-                    font-size:22px;
-                    color:#aaa;
-                ">
-                    Get ready...
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    if (game.phase === "MAFIA_TURN") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title"
-                    style="font-size:65px;">
-                    MAFIA
-                </div>
-
-                <p class="subtitle">
-                    The Mafia is choosing...
-                </p>
-
-                <div style="
-                    font-size:80px;
-                    margin-top:40px;
-                ">
-                    🔪
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    if (game.phase === "DISCUSSION") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title"
-                    style="font-size:65px;">
-                    DISCUSS
-                </div>
-
-                <p class="subtitle">
-                    Who do you think is the Mafia?
-                </p>
-
-                <div style="
-                    font-size:60px;
-                    margin-top:30px;
-                ">
-                    🗣️
-                </div>
-
-                <p style="
-                    margin-top:30px;
-                    color:#aaa;
-                ">
-                    Round ${game.currentRound}
-                </p>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    if (game.phase === "VOTING") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title"
-                    style="font-size:65px;">
-                    VOTE
-                </div>
-
-                <p class="subtitle">
-                    Who is the Mafia?
-                </p>
-
-                <div style="
-                    font-size:60px;
-                    margin-top:30px;
-                ">
-                    🗳️
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-    }
-
-
-    if (game.phase === "RESULT") {
-
-        showVoteResultsOnScreen();
-
-        return;
-    }
-
-
-    if (game.phase === "GAME_OVER") {
-
-        content.innerHTML = `
-
-            <div class="qr-page">
-
-                <div class="game-title">
-                    GAME OVER
-                </div>
-
-                <p class="subtitle">
-                    ${game.mafia && game.mafia.alive === false
-                        ? "THE PLAYERS WIN!"
-                        : "THE MAFIA WINS!"}
-                </p>
-
-                <div style="
-                    margin-top:40px;
-                    font-size:80px;
-                ">
-                    ${game.mafia && game.mafia.alive === false
-                        ? "🏆"
-                        : "🔴"}
-                </div>
-
-                <p style="
-                    margin-top:30px;
-                    font-size:24px;
-                ">
-                    The Mafia was:
-                    <strong style="color:#e50914;">
-                        ${escapeHTML(game.mafia.name)}
-                    </strong>
-                </p>
-
-            </div>
-
-        `;
-
-    }
-
-}
-
-
-/* ================= SELECT MODERATOR ================= */
-
-function selectModerator() {
-
-    if (game.players.length < 3) {
-
-        alert(
-            "You need at least 3 people to start a game."
-        );
-
-        return;
-    }
-
-    const randomIndex =
-        Math.floor(Math.random() * game.players.length);
-
-    game.moderator = game.players[randomIndex];
-
-    game.moderator.role = "MODERATOR";
-
-    game.phase = "MODERATOR_SELECTED";
-
-    updateScreen();
-
-    updateModerator();
-
-}
-
-
-/* ================= ASSIGN MAFIA ================= */
-
-function assignMafia() {
-
-    const possiblePlayers =
-        game.players.filter(
-            player =>
-                player !== game.moderator &&
-                player.alive
-        );
-
-    if (possiblePlayers.length === 0) {
-        return;
-    }
-
-    const randomIndex =
-        Math.floor(
-            Math.random() * possiblePlayers.length
-        );
-
-    game.mafia = possiblePlayers[randomIndex];
-
-    game.mafia.role = "MAFIA";
-
-    game.phase = "MAFIA_READY";
-
-    updateModerator();
-
-    updatePlayerRole();
-
-}
-
-
-/* ================= START GAME ================= */
-
-function startGame() {
-
-    if (!game.moderator) {
-        alert("Select a moderator first.");
-        return;
-    }
-
-    if (!game.mafia) {
-        assignMafia();
-    }
-
-    game.currentRound = 1;
-
-    game.phase = "MAFIA_TURN";
-
-    updateScreen();
-
-    updateModerator();
-
-    updatePlayerRole();
-
-}
-
-
-/* ================= MAFIA TURN ================= */
-
-function showMafiaControls() {
-
-    const content =
-        document.getElementById("moderator-content");
-
-    const livingPlayers =
-        game.players.filter(
-            player =>
-                player.alive &&
-                player !== game.moderator &&
-                player !== game.mafia
-        );
-
-    content.innerHTML = `
-
-        <div class="control-card">
-
-            <h2>🔴 Mafia Information</h2>
-
-            <div class="secret-mafia">
-                ${escapeHTML(game.mafia.name)}
-            </div>
-
-            <p style="
-                color:#aaa;
-                margin-top:10px;
-            ">
-                The Mafia must eliminate one player.
-            </p>
-
-        </div>
-
-        <div class="control-card">
-
-            <h2>Living Players</h2>
-
-            <div class="player-list">
-
-                ${livingPlayers.map(player => `
-
-                    <button
-                        class="player-choice"
-                        onclick="mafiaEliminate('${player.id}')">
-
-                        ${escapeHTML(player.name)}
-
-                    </button>
-
-                `).join("")}
 
             </div>
 
@@ -506,421 +332,479 @@ function showMafiaControls() {
 }
 
 
-/* ================= MAFIA ELIMINATION ================= */
+/* =====================================================
+   CURRENT PLAYER
+===================================================== */
+
+function getCurrentPlayer() {
+
+    return game.players.find(
+        player =>
+            player.id === currentPlayerId
+    );
+
+}
+
+
+/* =====================================================
+   SELECT MODERATOR
+===================================================== */
+
+function selectModerator() {
+
+    if (game.players.length < 3) {
+
+        alert(
+            "At least 3 players are required."
+        );
+
+        return;
+
+    }
+
+
+    const available =
+        [...game.players];
+
+
+    const index =
+        Math.floor(
+            Math.random() *
+            available.length
+        );
+
+
+    game.moderator =
+        available[index];
+
+
+    game.moderator.role =
+        "MODERATOR";
+
+
+    game.phase =
+        "MODERATOR_SELECTED";
+
+
+    updateScreen();
+
+    updateModerator();
+
+    updatePlayerInterface();
+
+}
+
+
+/* =====================================================
+   ASSIGN MAFIA
+===================================================== */
+
+function assignMafia() {
+
+    if (!game.moderator) {
+
+        alert(
+            "Choose the moderator first."
+        );
+
+        return;
+
+    }
+
+
+    const available =
+        game.players.filter(
+            player =>
+                player !== game.moderator &&
+                player.alive
+        );
+
+
+    if (!available.length) {
+
+        alert(
+            "No players available."
+        );
+
+        return;
+
+    }
+
+
+    const index =
+        Math.floor(
+            Math.random() *
+            available.length
+        );
+
+
+    game.mafia =
+        available[index];
+
+
+    game.mafia.role =
+        "MAFIA";
+
+
+    game.phase =
+        "MAFIA_READY";
+
+
+    updateScreen();
+
+    updateModerator();
+
+    updatePlayerInterface();
+
+}
+
+
+/* =====================================================
+   START GAME
+===================================================== */
+
+function startGame() {
+
+    if (!game.moderator) {
+
+        alert(
+            "Moderator has not been selected."
+        );
+
+        return;
+
+    }
+
+
+    if (!game.mafia) {
+
+        assignMafia();
+
+    }
+
+
+    game.round = 1;
+
+    game.phase =
+        "MAFIA_TURN";
+
+
+    updateScreen();
+
+    updateModerator();
+
+    updatePlayerInterface();
+
+}
+
+
+/* =====================================================
+   MAFIA ELIMINATION
+===================================================== */
 
 function mafiaEliminate(playerId) {
 
-    if (game.phase !== "MAFIA_TURN") {
+    if (
+        game.phase !==
+        "MAFIA_TURN"
+    ) {
+
         return;
+
     }
+
 
     const target =
         game.players.find(
             player =>
-                String(player.id) === String(playerId)
+                String(player.id) ===
+                String(playerId)
         );
 
-    if (!target || !target.alive) {
-        return;
-    }
+
+    if (!target) return;
+
+
+    if (!target.alive) return;
+
 
     if (
         target === game.mafia ||
         target === game.moderator
     ) {
+
         return;
+
     }
+
 
     target.alive = false;
 
-    game.mafiaTarget = target;
+    game.mafiaEliminated =
+        target;
 
-    game.phase = "DISCUSSION";
+
+    game.phase =
+        "DISCUSSION";
+
 
     updateScreen();
 
     updateModerator();
 
-    updatePlayerRole();
+    updatePlayerInterface();
 
 }
 
 
-/* ================= START DISCUSSION ================= */
+/* =====================================================
+   START DISCUSSION
+===================================================== */
 
 function startDiscussion() {
 
-    game.phase = "DISCUSSION";
+    game.phase =
+        "DISCUSSION";
+
 
     updateScreen();
 
     updateModerator();
 
+    updatePlayerInterface();
+
 }
 
 
-/* ================= START VOTING ================= */
+/* =====================================================
+   START VOTING
+===================================================== */
 
 function startVoting() {
 
     game.votes = {};
 
-    game.phase = "VOTING";
+    game.phase =
+        "VOTING";
+
 
     updateScreen();
 
     updateModerator();
 
-    updatePlayerRole();
+    updatePlayerInterface();
 
 }
 
 
-/* ================= PLAYER ROLE SCREEN ================= */
-
-function updatePlayerRole() {
-
-    const currentName =
-        document.getElementById("player-name").value.trim();
-
-    if (!currentName) {
-        return;
-    }
-
-    const player =
-        game.players.find(
-            p =>
-                p.name.toLowerCase() ===
-                currentName.toLowerCase()
-        );
-
-    if (!player) {
-        return;
-    }
-
-    if (!player.alive) {
-
-        showPlayerMessage(`
-
-            <div class="dead">
-
-                <div class="dead-icon">
-                    💀
-                </div>
-
-                <h2>YOU ARE OUT</h2>
-
-                <p style="
-                    color:#aaa;
-                    margin-top:15px;
-                ">
-                    You have been eliminated.
-                </p>
-
-            </div>
-
-        `);
-
-        return;
-    }
-
-
-    if (player === game.moderator) {
-
-        showPlayerMessage(`
-
-            <div class="player-card">
-
-                <h2>🛡️ MODERATOR</h2>
-
-                <p class="player-message">
-                    Use the Moderator screen to
-                    control the game.
-                </p>
-
-            </div>
-
-        `);
-
-        return;
-    }
-
-
-    if (player === game.mafia) {
-
-        if (game.phase === "MAFIA_TURN") {
-
-            const targets =
-                game.players.filter(
-                    p =>
-                        p.alive &&
-                        p !== game.mafia &&
-                        p !== game.moderator
-                );
-
-            showPlayerMessage(`
-
-                <div class="player-card">
-
-                    <div class="player-role mafia">
-
-                        <div class="role-icon">
-                            🔴
-                        </div>
-
-                        <div class="role-name">
-                            YOU ARE THE MAFIA
-                        </div>
-
-                        <div class="player-message">
-                            Choose one person to eliminate.
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="player-actions">
-
-                    <h3>
-                        Choose your target
-                    </h3>
-
-                    ${targets.map(target => `
-
-                        <button
-                            class="player-choice"
-                            onclick="playerMafiaEliminate('${target.id}')">
-
-                            ${escapeHTML(target.name)}
-
-                        </button>
-
-                    `).join("")}
-
-                </div>
-
-            `);
-
-        }
-
-        else {
-
-            showPlayerMessage(`
-
-                <div class="player-card">
-
-                    <div class="player-role mafia">
-
-                        <div class="role-icon">
-                            🔴
-                        </div>
-
-                        <div class="role-name">
-                            YOU ARE THE MAFIA
-                        </div>
-
-                        <div class="player-message">
-                            Stay hidden.
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `);
-
-        }
-
-        return;
-    }
-
-
-    /* NORMAL PLAYER */
-
-    if (game.phase === "VOTING") {
-
-        const targets =
-            game.players.filter(
-                p =>
-                    p.alive &&
-                    p !== game.moderator &&
-                    p !== player
-            );
-
-        showPlayerMessage(`
-
-            <div class="player-card">
-
-                <h2>🗳️ VOTE</h2>
-
-                <p class="player-message">
-                    Who do you think is the Mafia?
-                </p>
-
-            </div>
-
-            <div class="player-actions">
-
-                ${targets.map(target => `
-
-                    <button
-                        class="player-choice"
-                        onclick="castVote('${target.id}')">
-
-                        ${escapeHTML(target.name)}
-
-                    </button>
-
-                `).join("")}
-
-            </div>
-
-        `);
-
-        return;
-    }
-
-
-    showPlayerMessage(`
-
-        <div class="player-card">
-
-            <div class="player-role innocent">
-
-                <div class="role-icon">
-                    🟢
-                </div>
-
-                <div class="role-name">
-                    YOU ARE INNOCENT
-                </div>
-
-                <div class="player-message">
-
-                    ${game.phase === "DISCUSSION"
-                        ? "Discuss with the other players."
-                        : "Wait for the next phase."}
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `);
-
-}
-
-
-/* ================= PLAYER MAFIA ACTION ================= */
-
-function playerMafiaEliminate(playerId) {
-
-    mafiaEliminate(playerId);
-
-}
-
-
-/* ================= CAST VOTE ================= */
-
-function castVote(targetId) {
-
-    const currentName =
-        document.getElementById("player-name").value.trim();
+/* =====================================================
+   PLAYER VOTING
+===================================================== */
+
+function voteFor(playerId) {
 
     const voter =
-        game.players.find(
-            p =>
-                p.name.toLowerCase() ===
-                currentName.toLowerCase()
-        );
+        getCurrentPlayer();
 
-    if (!voter || !voter.alive) {
+
+    if (!voter) return;
+
+
+    if (!voter.alive) return;
+
+
+    if (
+        voter ===
+        game.moderator
+    ) {
+
         return;
+
     }
 
-    if (voter === game.moderator) {
-        return;
-    }
 
     if (voter === game.mafia) {
+
         return;
+
     }
 
-    game.votes[voter.id] = targetId;
+
+    if (
+        game.phase !==
+        "VOTING"
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        game.votes[voter.id]
+    ) {
+
+        alert(
+            "You have already voted."
+        );
+
+        return;
+
+    }
+
+
+    const target =
+        game.players.find(
+            player =>
+                String(player.id) ===
+                String(playerId)
+        );
+
+
+    if (!target) return;
+
+
+    if (!target.alive) return;
+
+
+    if (target === voter) {
+
+        alert(
+            "You cannot vote for yourself."
+        );
+
+        return;
+
+    }
+
+
+    game.votes[voter.id] =
+        target.id;
+
 
     showPlayerMessage(`
 
-        <div class="player-card">
+        <div class="player-page">
 
-            <h2>✓ VOTE SUBMITTED</h2>
-
-            <p class="player-message">
-                Your vote has been recorded.
-            </p>
-
-            <div style="
-                margin-top:30px;
-                font-size:50px;
-            ">
+            <div class="player-icon">
                 🗳️
             </div>
 
+            <h2>
+                VOTE SUBMITTED
+            </h2>
+
+            <p>
+                Your vote has been recorded.
+            </p>
+
+            <div class="role-card innocent">
+
+                <div class="role-icon">
+                    ✓
+                </div>
+
+                <div class="role-title">
+                    WAITING
+                </div>
+
+                <div class="role-description">
+                    Wait for the moderator
+                    to reveal the result.
+                </div>
+
+            </div>
+
         </div>
 
     `);
+
 
     updateModerator();
 
 }
 
 
-/* ================= COUNT VOTES ================= */
+/* =====================================================
+   COUNT VOTES
+===================================================== */
 
 function countVotes() {
 
     const counts = {};
 
-    Object.values(game.votes).forEach(targetId => {
 
-        if (!counts[targetId]) {
-            counts[targetId] = 0;
+    Object.values(
+        game.votes
+    ).forEach(
+        targetId => {
+
+            if (
+                !counts[targetId]
+            ) {
+
+                counts[targetId] = 0;
+
+            }
+
+            counts[targetId]++;
+
         }
+    );
 
-        counts[targetId]++;
-
-    });
 
     return counts;
 
 }
 
 
-/* ================= SHOW RESULTS ================= */
+/* =====================================================
+   SHOW RESULTS
+===================================================== */
 
 function showResults() {
 
-    const counts = countVotes();
+    const counts =
+        countVotes();
 
-    let highestVotes = 0;
 
-    let candidates = [];
+    if (
+        Object.keys(counts).length === 0
+    ) {
 
-    Object.entries(counts).forEach(
-        ([playerId, votes]) => {
+        alert(
+            "Nobody has voted yet."
+        );
 
-            if (votes > highestVotes) {
+        return;
 
-                highestVotes = votes;
+    }
 
-                candidates = [playerId];
+
+    let highest =
+        -1;
+
+    let winners = [];
+
+
+    Object.entries(
+        counts
+    ).forEach(
+        ([id, count]) => {
+
+            if (count > highest) {
+
+                highest = count;
+
+                winners = [id];
 
             }
 
-            else if (votes === highestVotes) {
+            else if (
+                count === highest
+            ) {
 
-                candidates.push(playerId);
+                winners.push(id);
 
             }
 
@@ -928,23 +812,20 @@ function showResults() {
     );
 
 
-    if (candidates.length === 0) {
+    /* TIE */
 
-        alert("Nobody voted.");
+    if (winners.length > 1) {
 
-        return;
-    }
+        game.phase =
+            "TIE";
 
 
-    /* Tie */
+        updateScreen();
 
-    if (candidates.length > 1) {
-
-        alert(
-            "There is a tie. Start another vote."
-        );
+        updateModerator();
 
         return;
+
     }
 
 
@@ -952,183 +833,561 @@ function showResults() {
         game.players.find(
             player =>
                 String(player.id) ===
-                String(candidates[0])
+                String(winners[0])
         );
 
-    if (!eliminated) {
-        return;
-    }
 
-    eliminated.alive = false;
+    if (!eliminated) return;
 
-    game.phase = "RESULT";
+
+    eliminated.alive =
+        false;
+
+
+    game.lastVoteEliminated =
+        eliminated;
+
+
+    game.phase =
+        "RESULT";
+
 
     updateScreen();
 
     updateModerator();
 
-}
-
-
-/* ================= RESULT SCREEN ================= */
-
-function showVoteResultsOnScreen() {
-
-    const eliminated =
-        game.players.find(
-            player => !player.alive &&
-                player !== game.mafiaTarget
-        );
-
-    /*
-        Find the latest player eliminated by vote.
-    */
-
-    const deadPlayers =
-        game.players.filter(
-            player =>
-                !player.alive &&
-                player !== game.mafiaTarget
-        );
-
-    const votedOut =
-        deadPlayers.length
-            ? deadPlayers[deadPlayers.length - 1]
-            : null;
-
-
-    if (!votedOut) {
-        return;
-    }
-
-
-    const isMafia =
-        votedOut === game.mafia;
-
-
-    document.getElementById(
-        "screen-content"
-    ).innerHTML = `
-
-        <div class="qr-page">
-
-            <div class="game-title"
-                style="font-size:55px;">
-
-                ${escapeHTML(votedOut.name)}
-
-            </div>
-
-            <p class="subtitle"
-                style="
-                    color:${isMafia ? "#e50914" : "#2979ff"};
-                ">
-
-                ${isMafia
-                    ? "IS THE MAFIA"
-                    : "IS NOT THE MAFIA"}
-
-            </p>
-
-            <div style="
-                margin-top:40px;
-                font-size:80px;
-            ">
-                ${isMafia ? "🔴" : "🔵"}
-            </div>
-
-        </div>
-
-    `;
+    updatePlayerInterface();
 
 }
 
 
-/* ================= CONTINUE GAME ================= */
+/* =====================================================
+   CONTINUE AFTER RESULT
+===================================================== */
 
-function continueGame() {
+function continueAfterResult() {
 
-    if (!game.mafia.alive) {
+    if (
+        game.lastVoteEliminated ===
+        game.mafia
+    ) {
 
-        game.phase = "GAME_OVER";
+        game.phase =
+            "GAME_OVER";
+
 
         updateScreen();
 
         updateModerator();
 
+        updatePlayerInterface();
+
         return;
+
     }
 
 
-    const livingPlayers =
+    const living =
         game.players.filter(
             player =>
                 player.alive &&
                 player !== game.moderator
         );
 
-    const livingInnocents =
-        livingPlayers.filter(
+
+    const mafiaAlive =
+        game.mafia &&
+        game.mafia.alive;
+
+
+    const innocentCount =
+        living.filter(
             player =>
                 player !== game.mafia
-        );
+        ).length;
 
 
-    /* Mafia wins when Mafia reaches parity */
+    /* MAFIA WINS */
 
     if (
-        livingInnocents.length <= 1
+        mafiaAlive &&
+        innocentCount <= 1
     ) {
 
-        game.phase = "GAME_OVER";
+        game.phase =
+            "GAME_OVER";
+
 
         updateScreen();
 
         updateModerator();
+
+        updatePlayerInterface();
 
         return;
 
     }
 
 
-    game.currentRound++;
+    game.round++;
 
-    game.phase = "MAFIA_TURN";
+    game.phase =
+        "MAFIA_TURN";
+
+
+    game.mafiaEliminated =
+        null;
+
+    game.lastVoteEliminated =
+        null;
+
 
     updateScreen();
 
     updateModerator();
 
-    updatePlayerRole();
+    updatePlayerInterface();
 
 }
 
 
-/* ================= MODERATOR UI ================= */
+/* =====================================================
+   SCREEN
+===================================================== */
+
+function updateScreen() {
+
+    const content =
+        document.getElementById(
+            "screen-content"
+        );
+
+
+    document.getElementById(
+        "display-game-code"
+    ).textContent =
+        game.code;
+
+
+    if (
+        game.phase ===
+        "LOBBY"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="screen-lobby">
+
+                <h1>
+                    MAFIA
+                </h1>
+
+                <p class="screen-subtitle">
+                    Scan the QR code to join
+                </p>
+
+                <div class="qr-wrapper">
+
+                    <div id="qrcode"></div>
+
+                </div>
+
+                <div class="game-code">
+
+                    GAME CODE:
+                    <strong>
+                        ${game.code}
+                    </strong>
+
+                </div>
+
+                <div id="screen-player-count">
+
+                    ${game.players.length}
+                    player(s) joined
+
+                </div>
+
+                <div id="screen-player-list">
+
+                    ${game.players
+                        .map(
+                            p =>
+                                escapeHTML(
+                                    p.name
+                                )
+                        )
+                        .join(" • ")}
+
+                </div>
+
+            </div>
+
+        `;
+
+        generateQRCode();
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "MODERATOR_SELECTED"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    🛡️
+                </div>
+
+                <h1>
+                    MODERATOR
+                </h1>
+
+                <p>
+                    ${escapeHTML(
+                        game.moderator.name
+                    )}
+                    has been selected.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "MAFIA_READY"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    🔒
+                </div>
+
+                <h1>
+                    GET READY
+                </h1>
+
+                <p>
+                    The moderator is
+                    preparing the game.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "MAFIA_TURN"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    🔴
+                </div>
+
+                <h1>
+                    MAFIA TURN
+                </h1>
+
+                <p>
+                    The Mafia is choosing
+                    someone...
+                </p>
+
+                <p>
+                    Round ${game.round}
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "DISCUSSION"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    🗣️
+                </div>
+
+                <h1>
+                    DISCUSSION
+                </h1>
+
+                <p>
+                    Discuss who you think
+                    the Mafia is.
+                </p>
+
+                <p>
+                    Round ${game.round}
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "VOTING"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    🗳️
+                </div>
+
+                <h1>
+                    VOTE
+                </h1>
+
+                <p>
+                    Choose who you think
+                    is the Mafia.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "TIE"
+    ) {
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    ⚖️
+                </div>
+
+                <h1>
+                    TIE
+                </h1>
+
+                <p>
+                    The vote is tied.
+                </p>
+
+                <p>
+                    A new vote is required.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "RESULT"
+    ) {
+
+        const player =
+            game.lastVoteEliminated;
+
+
+        const mafia =
+            player ===
+            game.mafia;
+
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+                    ${mafia
+                        ? "🔴"
+                        : "🔵"}
+                </div>
+
+                <h1>
+                    ${escapeHTML(
+                        player.name
+                    )}
+                </h1>
+
+                <p style="
+                    color:
+                    ${mafia
+                        ? "#e50914"
+                        : "#2979ff"};
+                ">
+
+                    ${mafia
+                        ? "IS THE MAFIA"
+                        : "IS NOT THE MAFIA"}
+
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "GAME_OVER"
+    ) {
+
+        const mafiaFound =
+            !game.mafia.alive;
+
+
+        content.innerHTML = `
+
+            <div class="game-screen">
+
+                <div class="big-screen-icon">
+
+                    ${mafiaFound
+                        ? "🏆"
+                        : "🔴"}
+
+                </div>
+
+                <h1>
+
+                    ${mafiaFound
+                        ? "PLAYERS WIN"
+                        : "MAFIA WINS"}
+
+                </h1>
+
+                <p>
+
+                    The Mafia was:
+                    <strong>
+                        ${escapeHTML(
+                            game.mafia.name
+                        )}
+                    </strong>
+
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+/* =====================================================
+   MODERATOR PANEL
+===================================================== */
 
 function updateModerator() {
 
     const content =
-        document.getElementById("moderator-content");
+        document.getElementById(
+            "moderator-content"
+        );
 
 
-    if (!game.moderator) {
+    if (
+        game.players.length === 0
+    ) {
 
         content.innerHTML = `
 
-            <div class="empty-state">
+            <div class="empty">
 
-                <h2>Waiting for players</h2>
+                <h2>
+                    Waiting for players
+                </h2>
 
                 <p>
-                    ${game.players.length}
-                    player(s) have joined.
+                    Players will appear here
+                    when they join.
                 </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    if (
+        !game.moderator
+    ) {
+
+        content.innerHTML = `
+
+            <div class="control-card">
+
+                <h2>
+                    Players
+                </h2>
+
+                ${playerListHTML()}
 
                 <div class="control-buttons">
 
                     <button
-                        class="control-btn start"
+                        class="control-button start"
                         onclick="selectModerator()">
 
                         SELECT MODERATOR
@@ -1142,49 +1401,7 @@ function updateModerator() {
         `;
 
         return;
-    }
 
-
-    if (!game.mafia) {
-
-        content.innerHTML = `
-
-            <div class="control-card">
-
-                <h2>Moderator</h2>
-
-                <div class="secret-mafia"
-                    style="color:#00c853;">
-
-                    ${escapeHTML(game.moderator.name)}
-
-                </div>
-
-            </div>
-
-            <div class="control-card">
-
-                <h2>Players</h2>
-
-                ${playerListHTML()}
-
-                <div class="control-buttons">
-
-                    <button
-                        class="control-btn danger"
-                        onclick="assignMafia()">
-
-                        SECRETLY SELECT MAFIA
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        `;
-
-        return;
     }
 
 
@@ -1192,22 +1409,16 @@ function updateModerator() {
 
         <div class="control-card">
 
-            <h2>🛡️ Moderator</h2>
+            <h2>
+                Moderator
+            </h2>
 
-            <p style="color:#aaa;">
-                ${escapeHTML(game.moderator.name)}
-            </p>
+            <div class="secret-mafia"
+                 style="color:#00d26a">
 
-        </div>
-
-
-        <div class="control-card">
-
-            <h2>🔒 Secret Mafia</h2>
-
-            <div class="secret-mafia">
-
-                ${escapeHTML(game.mafia.name)}
+                ${escapeHTML(
+                    game.moderator.name
+                )}
 
             </div>
 
@@ -1216,16 +1427,28 @@ function updateModerator() {
 
         <div class="control-card">
 
-            <h2>Game Status</h2>
+            <h2>
+                🔒 Secret Mafia
+            </h2>
 
-            <p style="
-                color:#aaa;
-                margin-bottom:15px;
-            ">
-                Round ${game.currentRound}
-                <br>
-                Phase: ${game.phase}
-            </p>
+            <div class="secret-mafia">
+
+                ${game.mafia
+                    ? escapeHTML(
+                        game.mafia.name
+                    )
+                    : "Not selected yet"}
+
+            </div>
+
+        </div>
+
+
+        <div class="control-card">
+
+            <h2>
+                Players
+            </h2>
 
             ${playerListHTML()}
 
@@ -1234,11 +1457,13 @@ function updateModerator() {
 
         <div class="control-card">
 
-            <h2>Controls</h2>
+            <h2>
+                Game Controls
+            </h2>
 
             <div class="control-buttons">
 
-                ${getModeratorControls()}
+                ${moderatorButtons()}
 
             </div>
 
@@ -1246,27 +1471,46 @@ function updateModerator() {
 
     `;
 
-
-    if (game.phase === "MAFIA_TURN") {
-        showMafiaControls();
-    }
-
 }
 
 
-/* ================= MODERATOR CONTROLS ================= */
+/* =====================================================
+   MODERATOR BUTTONS
+===================================================== */
 
-function getModeratorControls() {
+function moderatorButtons() {
 
-    if (game.phase === "MAFIA_READY") {
+    if (
+        !game.mafia
+    ) {
 
         return `
 
             <button
-                class="control-btn start"
+                class="control-button danger"
+                onclick="assignMafia()">
+
+                🔒 SELECT MAFIA
+
+            </button>
+
+        `;
+
+    }
+
+
+    if (
+        game.phase ===
+        "MAFIA_READY"
+    ) {
+
+        return `
+
+            <button
+                class="control-button start"
                 onclick="startGame()">
 
-                START GAME
+                ▶ START GAME
 
             </button>
 
@@ -1275,15 +1519,18 @@ function getModeratorControls() {
     }
 
 
-    if (game.phase === "DISCUSSION") {
+    if (
+        game.phase ===
+        "DISCUSSION"
+    ) {
 
         return `
 
             <button
-                class="control-btn start"
+                class="control-button start"
                 onclick="startVoting()">
 
-                START VOTING
+                🗳️ START VOTING
 
             </button>
 
@@ -1292,15 +1539,45 @@ function getModeratorControls() {
     }
 
 
-    if (game.phase === "VOTING") {
+    if (
+        game.phase ===
+        "VOTING"
+    ) {
+
+        const totalVoters =
+            game.players.filter(
+                player =>
+                    player.alive &&
+                    player !==
+                        game.moderator
+            ).length;
+
+
+        const submitted =
+            Object.keys(
+                game.votes
+            ).length;
+
 
         return `
 
+            <p style="
+                width:100%;
+                color:#aaa;
+            ">
+
+                ${submitted}
+                /
+                ${totalVoters}
+                votes submitted.
+
+            </p>
+
             <button
-                class="control-btn start"
+                class="control-button start"
                 onclick="showResults()">
 
-                SHOW VOTE RESULTS
+                SHOW RESULTS
 
             </button>
 
@@ -1309,15 +1586,77 @@ function getModeratorControls() {
     }
 
 
-    if (game.phase === "RESULT") {
+    if (
+        game.phase ===
+        "RESULT"
+    ) {
 
         return `
 
             <button
-                class="control-btn start"
-                onclick="continueGame()">
+                class="control-button start"
+                onclick="continueAfterResult()">
 
-                CONTINUE GAME
+                ▶ CONTINUE GAME
+
+            </button>
+
+        `;
+
+    }
+
+
+    if (
+        game.phase ===
+        "TIE"
+    ) {
+
+        return `
+
+            <button
+                class="control-button start"
+                onclick="startVoting()">
+
+                🔄 REVOTE
+
+            </button>
+
+        `;
+
+    }
+
+
+    if (
+        game.phase ===
+        "MAFIA_TURN"
+    ) {
+
+        return `
+
+            <p style="color:#aaa">
+
+                Waiting for Mafia
+                to choose...
+
+            </p>
+
+        `;
+
+    }
+
+
+    if (
+        game.phase ===
+        "GAME_OVER"
+    ) {
+
+        return `
+
+            <button
+                class="control-button start"
+                onclick="location.reload()">
+
+                🔄 NEW GAME
 
             </button>
 
@@ -1331,52 +1670,64 @@ function getModeratorControls() {
 }
 
 
-/* ================= PLAYER LIST ================= */
+/* =====================================================
+   MAFIA CONTROLS FOR MODERATOR
+===================================================== */
 
-function playerListHTML() {
+function mafiaControls() {
+
+    const targets =
+        game.players.filter(
+            player =>
+                player.alive &&
+                player !==
+                    game.moderator &&
+                player !==
+                    game.mafia
+        );
+
 
     return `
 
-        <div class="player-list">
+        <div class="control-card">
 
-            ${game.players.map(player => `
+            <h2>
+                🔪 Mafia Target
+            </h2>
 
-                <div class="
-                    player-item
-                    ${player.alive ? "" : "dead"}
-                ">
+            <p style="
+                color:#aaa;
+                margin-bottom:15px;
+            ">
 
-                    <div>
+                The Mafia must eliminate
+                one living player.
 
-                        <div class="player-name">
+            </p>
 
-                            ${escapeHTML(player.name)}
+            <div class="player-grid">
 
-                        </div>
+                ${targets.map(
+                    player => `
 
-                        <div class="player-role-small">
+                    <button
+                        class="choice-button"
+                        onclick="
+                            mafiaEliminate(
+                                '${player.id}'
+                            )
+                        ">
 
-                            ${player === game.moderator
-                                ? "MODERATOR"
-                                : player === game.mafia
-                                    ? "MAFIA"
-                                    : "PLAYER"}
+                        ${escapeHTML(
+                            player.name
+                        )}
 
-                        </div>
+                    </button>
 
-                    </div>
+                `
+                ).join("")}
 
-                    <div>
-
-                        ${player.alive
-                            ? "🟢"
-                            : "💀"}
-
-                    </div>
-
-                </div>
-
-            `).join("")}
+            </div>
 
         </div>
 
@@ -1385,32 +1736,549 @@ function playerListHTML() {
 }
 
 
-/* ================= PLAYER MESSAGE ================= */
+/* =====================================================
+   PLAYER LIST
+===================================================== */
+
+function playerListHTML() {
+
+    return `
+
+        <div class="player-grid">
+
+            ${game.players.map(
+                player => `
+
+                <div class="
+                    player-item
+                    ${player.alive
+                        ? ""
+                        : "dead"}
+                ">
+
+                    <div>
+
+                        <div class="
+                            player-item-name
+                        ">
+
+                            ${escapeHTML(
+                                player.name
+                            )}
+
+                        </div>
+
+                        <div class="
+                            player-item-role
+                        ">
+
+                            ${
+                                player ===
+                                game.moderator
+                                    ? "MODERATOR"
+                                    : player ===
+                                      game.mafia
+                                        ? "MAFIA"
+                                        : "PLAYER"
+                            }
+
+                        </div>
+
+                    </div>
+
+                    <div>
+
+                        ${
+                            player.alive
+                                ? "🟢"
+                                : "💀"
+                        }
+
+                    </div>
+
+                </div>
+
+            `
+            ).join("")}
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   PLAYER INTERFACE
+===================================================== */
+
+function updatePlayerInterface() {
+
+    const player =
+        getCurrentPlayer();
+
+
+    if (!player) return;
+
+
+    if (!player.alive) {
+
+        showPlayerMessage(`
+
+            <div class="dead-player">
+
+                <div class="skull">
+                    💀
+                </div>
+
+                <h2>
+                    YOU ARE OUT
+                </h2>
+
+                <p>
+                    You have been eliminated.
+                </p>
+
+            </div>
+
+        `);
+
+        return;
+
+    }
+
+
+    if (
+        player ===
+        game.moderator
+    ) {
+
+        showPlayerMessage(`
+
+            <div class="player-page">
+
+                <div class="player-icon">
+                    🛡️
+                </div>
+
+                <h2>
+                    YOU ARE THE MODERATOR
+                </h2>
+
+                <p>
+                    Use the moderator panel
+                    to control the game.
+                </p>
+
+            </div>
+
+        `);
+
+        return;
+
+    }
+
+
+    if (
+        player ===
+        game.mafia
+    ) {
+
+        if (
+            game.phase ===
+            "MAFIA_TURN"
+        ) {
+
+            const targets =
+                game.players.filter(
+                    p =>
+                        p.alive &&
+                        p !==
+                            game.moderator &&
+                        p !==
+                            game.mafia
+                );
+
+
+            showPlayerMessage(`
+
+                <div class="player-page">
+
+                    <div class="
+                        role-card mafia
+                    ">
+
+                        <div class="role-icon">
+                            🔴
+                        </div>
+
+                        <div class="role-title">
+                            YOU ARE THE MAFIA
+                        </div>
+
+                        <div class="
+                            role-description
+                        ">
+
+                            Choose one person
+                            to eliminate.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="
+                    choice-container
+                ">
+
+                    <h3>
+                        Choose your target
+                    </h3>
+
+                    ${targets.map(
+                        target => `
+
+                        <button
+                            class="
+                                choice-button
+                            "
+                            onclick="
+                                mafiaEliminate(
+                                    '${target.id}'
+                                )
+                            ">
+
+                            ${escapeHTML(
+                                target.name
+                            )}
+
+                        </button>
+
+                    `
+                    ).join("")}
+
+                </div>
+
+            `);
+
+        }
+
+        else {
+
+            showPlayerMessage(`
+
+                <div class="player-page">
+
+                    <div class="
+                        role-card mafia
+                    ">
+
+                        <div class="role-icon">
+                            🔴
+                        </div>
+
+                        <div class="role-title">
+                            YOU ARE THE MAFIA
+                        </div>
+
+                        <div class="
+                            role-description
+                        ">
+
+                            Stay hidden.
+                            Wait for your next turn.
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `);
+
+        }
+
+        return;
+
+    }
+
+
+    /* NORMAL PLAYER */
+
+    if (
+        game.phase ===
+        "VOTING"
+    ) {
+
+        const targets =
+            game.players.filter(
+                p =>
+                    p.alive &&
+                    p !==
+                        game.moderator &&
+                    p !== player
+            );
+
+
+        showPlayerMessage(`
+
+            <div class="player-page">
+
+                <div class="player-icon">
+                    🗳️
+                </div>
+
+                <h2>
+                    WHO IS THE MAFIA?
+                </h2>
+
+                <p>
+                    Choose one player.
+                </p>
+
+            </div>
+
+            <div class="
+                choice-container
+            ">
+
+                ${targets.map(
+                    target => `
+
+                    <button
+                        class="
+                            choice-button
+                        "
+                        onclick="
+                            voteFor(
+                                '${target.id}'
+                            )
+                        ">
+
+                        ${escapeHTML(
+                            target.name
+                        )}
+
+                    </button>
+
+                `
+                ).join("")}
+
+            </div>
+
+        `);
+
+        return;
+
+    }
+
+
+    if (
+        game.phase ===
+        "DISCUSSION"
+    ) {
+
+        showPlayerMessage(`
+
+            <div class="player-page">
+
+                <div class="player-icon">
+                    🗣️
+                </div>
+
+                <h2>
+                    DISCUSS
+                </h2>
+
+                <p>
+                    Talk with the other
+                    players and decide
+                    who you suspect.
+                </p>
+
+            </div>
+
+        `);
+
+        return;
+
+    }
+
+
+    showPlayerMessage(`
+
+        <div class="player-page">
+
+            <div class="
+                role-card innocent
+            ">
+
+                <div class="role-icon">
+                    🟢
+                </div>
+
+                <div class="role-title">
+                    YOU ARE INNOCENT
+                </div>
+
+                <div class="
+                    role-description
+                ">
+
+                    Watch carefully.
+                    The Mafia is hiding
+                    among you.
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `);
+
+}
+
+
+/* =====================================================
+   SHOW PLAYER MESSAGE
+===================================================== */
 
 function showPlayerMessage(html) {
 
     document.getElementById(
         "player-content"
-    ).innerHTML = html;
+    ).innerHTML =
+        html;
 
 }
 
 
-/* ================= SECURITY ================= */
+/* =====================================================
+   MAFIA TURN FOR CURRENT PLAYER
+===================================================== */
+
+function refreshCurrentPlayer() {
+
+    updatePlayerInterface();
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHTML(text) {
 
-    const div = document.createElement("div");
+    const div =
+        document.createElement(
+            "div"
+        );
 
-    div.textContent = text;
+    div.textContent =
+        text;
 
     return div.innerHTML;
 
 }
 
 
-/* ================= INITIALIZATION ================= */
+/* =====================================================
+   MAKE MODERATOR PANEL SHOW MAFIA CONTROLS
+===================================================== */
 
-updateScreen();
+const originalUpdateModerator =
+    updateModerator;
 
-updateModerator();
+
+/*
+   Add Mafia target controls after
+   the normal moderator panel.
+*/
+
+function refreshModerator() {
+
+    originalUpdateModerator();
+
+    if (
+        game.phase ===
+        "MAFIA_TURN"
+    ) {
+
+        const content =
+            document.getElementById(
+                "moderator-content"
+            );
+
+        content.innerHTML +=
+            mafiaControls();
+
+    }
+
+}
+
+
+/* =====================================================
+   REPLACE NORMAL UPDATE CALLS
+===================================================== */
+
+const oldUpdateModerator =
+    updateModerator;
+
+updateModerator =
+    function () {
+
+        oldUpdateModerator();
+
+        if (
+            game.phase ===
+            "MAFIA_TURN"
+        ) {
+
+            const content =
+                document.getElementById(
+                    "moderator-content"
+                );
+
+            content.innerHTML +=
+                mafiaControls();
+
+        }
+
+    };
+
+
+/* =====================================================
+   PLAYER NAME ENTER KEY
+===================================================== */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key ===
+            "Enter"
+        ) {
+
+            const input =
+                document.getElementById(
+                    "player-name"
+                );
+
+            if (
+                document.activeElement ===
+                input
+            ) {
+
+                joinGame();
+
+            }
+
+        }
+
+    }
+);
