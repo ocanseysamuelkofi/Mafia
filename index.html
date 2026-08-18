@@ -2,180 +2,465 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>MAFIA</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="style.css">
+    <title>Mafia Game</title>
 
-    <!-- QR CODE LIBRARY -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <tyle.css
+
+    <!-- QR code generator -->
+    <script
+        src="https://cdnjslibs/qrcodejs/1.0.0/qrcode.min.jsscript>
+
+    <!-- Firebase -->
+    <script
+        src="httpsrebasejs/10.12.5/firebase-app-compat.jsscript>
+
+    <script
+        src="https://www.gstatic.com/firebaseatabase-compat.jsscript>
+
+    <script src="script.js" defer></script>
 </head>
 
 <body>
+    <!-- Notification -->
+    <div id="notification" class="notification hidden"></div>>
+    <main id="homePage" class="page">
+        <section class="hero">
+            <div class="hero-content">
+                <p class="eyebrow">A social deduction game</p>
+                <h1>MAFIA</h1>
 
-<header class="topbar">
+                <p class="hero-description">
+                    Join the players, find the hidden Mafia and eliminate
+                    the Mafia before everyone else is eliminated.
+                </p>
 
-    <div class="logo">
-        MAFIA
-    </div>
+                <div class="home-actions">
+                    <button id="createGameButton" class="primary-button">
+                        Create New Game
+                    </button>
 
-    <div class="mode-buttons">
-
-        <button onclick="showView('screen')">
-            📺 Screen
-        </button>
-
-        <button onclick="showView('player')">
-            🎮 Player
-        </button>
-
-        <button onclick="showView('moderator')">
-            🛡️ Moderator
-        </button>
-
-    </div>
-
-</header>
-
-
-<!-- =====================================================
-     PUBLIC SCREEN
-====================================================== -->
-
-<section id="screen-view" class="view active">
-
-    <div id="screen-content">
-
-        <div class="screen-lobby">
-
-            <h1>MAFIA</h1>
-
-            <p class="screen-subtitle">
-                Scan the QR code to join the game
-            </p>
-
-            <div class="qr-wrapper">
-
-                <div id="qrcode"></div>
-
-            </div>
-
-            <div class="game-code">
-                GAME CODE:
-                <strong id="display-game-code">
-                    MAFIA123
-                </strong>
-            </div>
-
-            <div id="screen-player-count">
-                Waiting for players...
-            </div>
-
-            <div id="screen-player-list">
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =====================================================
-     PLAYER PHONE
-====================================================== -->
-
-<section id="player-view" class="view">
-
-    <div class="phone">
-
-        <div class="phone-top">
-
-            <strong>MAFIA</strong>
-
-            <span>
-                ● ONLINE
-            </span>
-
-        </div>
-
-        <div id="player-content">
-
-            <div class="player-page">
-
-                <div class="player-icon">
-                    🎮
+                    <button id="openJoinButton" class="secondary-button">
+                        Join a Game
+                    </button>
                 </div>
 
-                <h2>Join Game</h2>
+                <button id="continueGameButton" class="text-button hidden">
+                    Continue previous game
+                </button>
+            </div>
+        </section>
+    </main>
 
-                <p>
-                    Enter your name to join.
-                </p>
+    <!-- Join page -->
+    <main id="joinPage" class="page hidden">
+        <section class="card small-card">
+            <button
+                class="back-button"
+                data-go-home
+                aria-label="Go back"
+            >
+                ← Back
+            </button>
+
+            <div class="section-heading">
+                <span class="section-icon">🎭</span>
+                <h2>Join the Game</h2>
+                <p>Enter the game code and your name.</p>
+            </div>
+
+            <form id="joinForm" class="form">
+                <label for="joinGameCode">Game code</label>
 
                 <input
-                    id="player-name"
+                    id="joinGameCode"
                     type="text"
-                    maxlength="20"
-                    placeholder="Your name"
+                    maxlength="6"
+                    placeholder="Example: A7K9Q2"
                     autocomplete="off"
+                    required
                 >
+
+                <label for="playerName">Your name</label>
+
+                <input
+                    id="playerName"
+                    type="text"
+                    maxlength="25"
+                    placeholder="Enter your name"
+                    autocomplete="name"
+                    required
+                >
+
+                <button type="submit" class="primary-button full-button">
+                    Join Game
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <!-- Screen display -->
+    <main id="screenPage" class="page hidden screen-page">
+        <header class="top-bar">
+            <div>
+                <p class="eyebrow">Screen display</p>
+                <h2>MAFIA</h2>
+            </div>
+
+            <div class="game-code-display">
+                <span>Game code</span>
+                <strong id="screenGameCode">------</strong>
+            </div>
+        </header>
+
+        <!-- Lobby -->
+        <section id="screenLobby" class="screen-section">
+            <div class="lobby-layout">
+                <article class="card qr-card">
+                    <h2>Scan to Join</h2>
+
+                    <div id="qrCode" class="qr-code"></div>
+
+                    <p id="joinAddress" class="join-address">
+                        Loading join address...
+                    </p>
+
+                    <button id="copyLinkButton" class="secondary-button">
+                        Copy Join Link
+                    </button>
+                </article>
+
+                <article class="card players-card">
+                    <div class="card-title-row">
+                        <div>
+                            <p class="eyebrow">Game lobby</p>
+                            <h2>Players</h2>
+                        </div>
+
+                        <span id="playerCountBadge" class="player-count">
+                            0 players
+                        </span>
+                    </div>
+
+                    <div id="screenPlayerList" class="player-list">
+                        <div class="empty-state">
+                            Waiting for players to join...
+                        </div>
+                    </div>
+
+                    <div class="moderator-selection">
+                        <label for="moderatorSelect">
+                            Choose a moderator
+                        </label>
+
+                        <select id="moderatorSelect">
+                            <option value="">Select a player</option>
+                        </select>
+
+                        <button
+                            id="assignModeratorButton"
+                            class="secondary-button full-button"
+                        >
+                            Assign Moderator
+                        </button>
+
+                        <p id="moderatorDisplay" class="moderator-display">
+                            No moderator selected
+                        </p>
+                    </div>
+
+                    <button
+                        id="startGameButton"
+                        class="primary-button full-button"
+                        disabled
+                    >
+                        Start Game
+                    </button>
+
+                    <p class="helper-text">
+                        At least 4 people must join. One person will be the
+                        moderator and another will secretly become the Mafia.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <!-- Main public game screen -->
+        <section id="screenGame" class="screen-section hidden">
+            <div class="phase-banner">
+                <p id="screenRoundLabel">ROUND 1</p>
+                <h1 id="screenPhaseTitle">The game is starting</h1>
+                <p id="screenPhaseMessage">
+                    Look at your device for instructions.
+                </p>
+            </div>
+
+            <div class="game-layout">
+                <article class="card">
+                    <div class="card-title-row">
+                        <h2>Remaining players</h2>
+
+                        <span id="aliveCountBadge" class="player-count">
+                            0 alive
+                        </span>
+                    </div>
+
+                    <div id="alivePlayerList" class="player-grid"></div>
+                </article>
+
+                <article class="card event-card">
+                    <p class="eyebrow">Latest event</p>
+                    <h2 id="publicEventTitle">The game has started</h2>
+
+                    <p id="publicEventMessage">
+                        The Mafia is hidden among the players.
+                    </p>
+
+                    <div id="voteProgress" class="vote-progress hidden">
+                        <div class="progress-details">
+                            <span>Votes received</span>
+                            <strong id="voteProgressText">0 / 0</strong>
+                        </div>
+
+                        <div class="progress-track">
+                            <div
+                                id="voteProgressBar"
+                                class="progress-bar"
+                            ></div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- Result overlay -->
+        <section id="resultOverlay" class="result-overlay hidden">
+            <div class="result-box">
+                <p id="resultEyebrow" class="eyebrow">VOTE RESULT</p>
+                <h1 id="resultTitle">Player is not the MAFIA</h1>
+                <p id="resultMessage">
+                    The game will continue.
+                </p>
+            </div>
+        </section>
+
+        <!-- Game over -->
+        <section id="gameOverScreen" class="game-over-screen hidden">
+            <div class="game-over-content">
+                <p class="eyebrow">GAME OVER</p>
+                <h1 id="gameOverTitle">The Mafia was found!</h1>
+                <p id="gameOverMessage"></p>
 
                 <button
-                    class="big-button"
-                    onclick="joinGame()"
+                    id="newGameButton"
+                    class="primary-button"
                 >
-                    JOIN GAME
+                    Create Another Game
                 </button>
+            </div>
+        </section>
+    </main>
 
+    <!-- Player side -->
+    <main id="playerPage" class="page hidden">
+        <header class="mobile-header">
+            <div>
+                <p class="eyebrow">Player side</p>
+                <h2>MAFIA</h2>
             </div>
 
-        </div>
+            <div class="round-pill">
+                <span id="playerRoundLabel">Lobby</span>
+            </div>
+        </header>
 
-    </div>
+        <section class="mobile-container">
+            <!-- Player waiting room -->
+            <article id="playerLobby" class="card center-card">
+                <div class="large-icon">✓</div>
 
-</section>
-
-
-<!-- =====================================================
-     MODERATOR
-====================================================== -->
-
-<section id="moderator-view" class="view">
-
-    <div class="moderator-container">
-
-        <div class="moderator-title">
-
-            <div>
-
-                <h1>
-                    Moderator Panel
-                </h1>
+                <h2>You have joined!</h2>
 
                 <p>
-                    Control the Mafia game.
+                    Welcome, <strong id="joinedPlayerName">Player</strong>.
                 </p>
 
+                <p class="muted">
+                    Wait for the game host to select a moderator and start
+                    the game.
+                </p>
+
+                <div class="status-box">
+                    <span class="pulse-dot"></span>
+                    Waiting in the lobby
+                </div>
+            </article>
+
+            <!-- Normal player status -->
+            <article id="playerStatusCard" class="card hidden">
+                <p class="eyebrow">Your status</p>
+
+                <div id="roleIcon" class="large-icon">👤</div>
+
+                <h1 id="playerRoleTitle">You are a Player</h1>
+
+                <p id="playerRoleMessage" class="role-message">
+                    Find the Mafia before it is too late.
+                </p>
+
+                <div id="eliminatedMessage" class="danger-box hidden">
+                    You have been eliminated. You can watch the remainder
+                    of the game, but you cannot vote.
+                </div>
+
+                <!-- Mafia controls -->
+                <div id="mafiaControls" class="action-panel hidden">
+                    <h3>Choose someone to eliminate</h3>
+
+                    <p>
+                        Only you and the moderator can see this control.
+                    </p>
+
+                    <div
+                        id="mafiaTargetList"
+                        class="selection-list"
+                    ></div>
+
+                    <button
+                        id="mafiaEliminateButton"
+                        class="danger-button full-button"
+                        disabled
+                    >
+                        Eliminate Selected Player
+                    </button>
+                </div>
+
+                <!-- Voting controls -->
+                <div id="votingControls" class="action-panel hidden">
+                    <h3>Who do you think is the Mafia?</h3>
+
+                    <p>
+                        Select one remaining player. You cannot change your
+                        vote after submitting it.
+                    </p>
+
+                    <div
+                        id="voteTargetList"
+                        class="selection-list"
+                    ></div>
+
+                    <button
+                        id="submitVoteButton"
+                        class="primary-button full-button"
+                        disabled
+                    >
+                        Submit Vote
+                    </button>
+                </div>
+
+                <div id="playerWaitingMessage" class="status-box hidden">
+                    <span class="pulse-dot"></span>
+                    Waiting for the moderator...
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <!-- Moderator side -->
+    <main id="moderatorPage" class="page hidden moderator-page">
+        <header class="mobile-header">
+            <div>
+                <p class="eyebrow">Moderator side</p>
+                <h2>Game Control</h2>
             </div>
 
-            <span class="secret-label">
-                🔒 SECRET
-            </span>
+            <div class="round-pill">
+                <span id="moderatorRoundLabel">Lobby</span>
+            </div>
+        </header>
 
-        </div>
+        <section class="mobile-container">
+            <article class="card moderator-secret">
+                <p class="eyebrow">Secret information</p>
+                <h2>The Mafia is</h2>
+                <div id="mafiaNameDisplay" class="mafia-name">
+                    Hidden until the game starts
+                </div>
 
-        <div id="moderator-content">
+                <p>
+                    Do not reveal the Mafia's identity to the other players.
+                </p>
+            </article>
 
-        </div>
+            <article class="card">
+                <p class="eyebrow">Current phase</p>
+                <h2 id="moderatorPhaseTitle">Waiting for the game</h2>
 
-    </div>
+                <p id="moderatorInstructions">
+                    The game will begin when the screen host starts it.
+                </p>
 
-</section>
+                <button
+                    id="beginMafiaTurnButton"
+                    class="danger-button full-button hidden"
+                >
+                    Allow Mafia to Eliminate
+                </button>
 
+                <button
+                    id="beginDiscussionButton"
+                    class="secondary-button full-button hidden"
+                >
+                    Begin Discussion
+                </button>
 
-<script src="script.js"></script>
+                <button
+                    id="beginVotingButton"
+                    class="primary-button full-button hidden"
+                >
+                    Open Voting
+                </button>
 
+                <button
+                    id="revealVoteButton"
+                    class="primary-button full-button hidden"
+                >
+                    Reveal Vote Result
+                </button>
+
+                <button
+                    id="continueRoundButton"
+                    class="secondary-button full-button hidden"
+                >
+                    Continue to Next Round
+                </button>
+            </article>
+
+            <article class="card">
+                <div class="card-title-row">
+                    <h2>Players</h2>
+                    <span id="moderatorAliveBadge" class="player-count">
+                        0 alive
+                    </span>
+                </div>
+
+                <div id="moderatorPlayerList" class="player-list"></div>
+            </article>
+
+            <article id="moderatorVoteCard" class="card hidden">
+                <div class="card-title-row">
+                    <h2>Voting progress</h2>
+                    <strong id="moderatorVoteCount">0 / 0</strong>
+                </div>
+
+                <div id="moderatorVoteList" class="vote-results"></div>
+            </article>
+        </section>
+    </main>
 </body>
 </html>
