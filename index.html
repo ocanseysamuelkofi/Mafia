@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mafia Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">MAFIA</div>
+
+        <div class="mode-buttons">
+            <button onclick="showScreen('screen')">📺 Screen</button>
+            <button onclick="showScreen('player')">🎮 Player</button>
+            <button onclick="showScreen('moderator')">🛡️ Moderator</button>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- ================= SCREEN DISPLAY ================= -->
+        <section id="screen-view" class="view active">
+
+            <div class="screen-container">
+
+                <div id="screen-content">
+
+                    <div class="qr-page">
+
+                        <div class="game-title">MAFIA</div>
+
+                        <p class="subtitle">
+                            Scan the QR code to join the game
+                        </p>
+
+                        <div class="qr-code">
+                            <div class="qr-pattern"></div>
+                        </div>
+
+                        <p class="join-code">
+                            Game Code:
+                            <strong id="game-code">MAFIA123</strong>
+                        </p>
+
+                        <div class="screen-status">
+                            Waiting for players...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= PLAYER ================= -->
+        <section id="player-view" class="view">
+
+            <div class="phone">
+
+                <div class="phone-header">
+                    <span>MAFIA</span>
+                    <span id="player-status">ONLINE</span>
+                </div>
+
+                <div id="player-content">
+
+                    <div class="player-card">
+
+                        <h2>Join Game</h2>
+
+                        <input
+                            type="text"
+                            id="player-name"
+                            placeholder="Enter your name"
+                            maxlength="20"
+                        >
+
+                        <button class="primary-btn" onclick="joinGame()">
+                            JOIN GAME
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODERATOR ================= -->
+        <section id="moderator-view" class="view">
+
+            <div class="moderator-panel">
+
+                <div class="moderator-header">
+                    <h1>Moderator Panel</h1>
+                    <span class="secret-badge">🔒 SECRET</span>
+                </div>
+
+                <div id="moderator-content">
+
+                    <div class="empty-state">
+                        <h2>Waiting for players</h2>
+                        <p>Players will appear here when they join.</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

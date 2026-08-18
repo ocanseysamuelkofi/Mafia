@@ -1,0 +1,560 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --red: #e50914;
+    --dark-red: #9d0208;
+    --black: #050505;
+    --dark: #111111;
+    --card: #1b1b1b;
+    --gray: #888;
+    --white: #ffffff;
+    --green: #00c853;
+    --blue: #2979ff;
+    --yellow: #ffc107;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--black);
+    color: white;
+    min-height: 100vh;
+}
+
+/* ================= HEADER ================= */
+
+header {
+    height: 70px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #292929;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 30px;
+}
+
+.logo {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--red);
+    letter-spacing: 5px;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.mode-buttons button {
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+
+    padding: 10px 15px;
+    border-radius: 8px;
+
+    cursor: pointer;
+}
+
+.mode-buttons button:hover {
+    background: var(--red);
+}
+
+/* ================= VIEWS ================= */
+
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+
+/* ================= SCREEN ================= */
+
+.screen-container {
+    min-height: calc(100vh - 70px);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background:
+        radial-gradient(
+            circle at center,
+            #320000 0%,
+            #090000 45%,
+            #000000 100%
+        );
+}
+
+.qr-page {
+    text-align: center;
+}
+
+.game-title {
+    font-size: clamp(70px, 10vw, 150px);
+    font-weight: 900;
+    letter-spacing: 20px;
+    color: var(--red);
+
+    text-shadow:
+        0 0 20px rgba(229, 9, 20, 0.6),
+        0 0 60px rgba(229, 9, 20, 0.3);
+}
+
+.subtitle {
+    font-size: 25px;
+    margin: 20px 0 30px;
+    color: #ddd;
+}
+
+.qr-code {
+    width: 260px;
+    height: 260px;
+
+    background: white;
+
+    margin: auto;
+
+    padding: 15px;
+
+    position: relative;
+}
+
+.qr-pattern {
+    width: 100%;
+    height: 100%;
+
+    background:
+        linear-gradient(90deg, #000 10px, transparent 10px),
+        linear-gradient(#000 10px, transparent 10px);
+
+    background-size: 25px 25px;
+}
+
+.join-code {
+    margin-top: 25px;
+    font-size: 22px;
+}
+
+.join-code strong {
+    color: var(--red);
+    letter-spacing: 3px;
+}
+
+.screen-status {
+    margin-top: 30px;
+
+    font-size: 18px;
+    color: #aaa;
+}
+
+/* ================= PHONE ================= */
+
+#player-view {
+    min-height: calc(100vh - 70px);
+
+    display: none;
+
+    justify-content: center;
+    align-items: center;
+
+    background: #060606;
+}
+
+#player-view.active {
+    display: flex;
+}
+
+.phone {
+    width: 390px;
+    min-height: 650px;
+
+    background: #111;
+
+    border: 8px solid #282828;
+    border-radius: 35px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, .6);
+}
+
+.phone-header {
+    height: 60px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0 20px;
+
+    background: var(--red);
+
+    font-weight: bold;
+}
+
+#player-status {
+    font-size: 11px;
+}
+
+.player-card {
+    padding: 35px 25px;
+    text-align: center;
+}
+
+.player-card h2 {
+    font-size: 30px;
+    margin-bottom: 30px;
+}
+
+.player-card input {
+    width: 100%;
+
+    padding: 16px;
+
+    background: #222;
+    border: 1px solid #444;
+
+    border-radius: 10px;
+
+    color: white;
+
+    font-size: 17px;
+
+    margin-bottom: 15px;
+}
+
+.primary-btn {
+    width: 100%;
+
+    padding: 16px;
+
+    background: var(--red);
+
+    border: none;
+    border-radius: 10px;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    background: #ff1b25;
+}
+
+/* ================= PLAYER STATES ================= */
+
+.player-role {
+    margin: 30px 0;
+
+    padding: 30px 15px;
+
+    border-radius: 15px;
+
+    background: #191919;
+}
+
+.player-role.mafia {
+    border: 2px solid var(--red);
+
+    box-shadow:
+        0 0 30px rgba(229, 9, 20, .2);
+}
+
+.player-role.innocent {
+    border: 2px solid #333;
+}
+
+.role-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+.role-name {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.player-message {
+    color: #aaa;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+/* ================= PLAYER ACTIONS ================= */
+
+.player-actions {
+    padding: 20px;
+}
+
+.player-actions h3 {
+    margin-bottom: 15px;
+}
+
+.player-choice {
+    display: block;
+
+    width: 100%;
+
+    padding: 15px;
+    margin-bottom: 10px;
+
+    border-radius: 10px;
+
+    border: 1px solid #444;
+
+    background: #1d1d1d;
+
+    color: white;
+
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.player-choice:hover {
+    border-color: var(--red);
+}
+
+.player-choice.selected {
+    background: var(--red);
+    border-color: var(--red);
+}
+
+.dead {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.dead-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.dead h2 {
+    color: var(--red);
+}
+
+/* ================= MODERATOR ================= */
+
+#moderator-view {
+    padding: 30px;
+}
+
+.moderator-panel {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.moderator-header {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 30px;
+}
+
+.moderator-header h1 {
+    font-size: 30px;
+}
+
+.secret-badge {
+    background: #461010;
+
+    border: 1px solid var(--red);
+
+    padding: 8px 15px;
+
+    border-radius: 20px;
+
+    color: #ff6970;
+
+    font-size: 13px;
+}
+
+.empty-state {
+    text-align: center;
+
+    padding: 80px 20px;
+
+    background: var(--card);
+
+    border-radius: 15px;
+
+    color: #aaa;
+}
+
+/* ================= PLAYER LIST ================= */
+
+.player-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+
+    gap: 15px;
+
+    margin-bottom: 30px;
+}
+
+.player-item {
+    background: var(--card);
+
+    border: 1px solid #333;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-item.dead {
+    opacity: .4;
+}
+
+.player-name {
+    font-weight: bold;
+}
+
+.player-role-small {
+    font-size: 12px;
+    color: var(--gray);
+}
+
+/* ================= MODERATOR CARDS ================= */
+
+.control-card {
+    background: var(--card);
+
+    border: 1px solid #333;
+
+    border-radius: 15px;
+
+    padding: 25px;
+
+    margin-bottom: 20px;
+}
+
+.control-card h2 {
+    margin-bottom: 15px;
+}
+
+.secret-mafia {
+    color: var(--red);
+
+    font-size: 25px;
+
+    font-weight: bold;
+}
+
+.control-buttons {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+.control-btn {
+    padding: 13px 20px;
+
+    border-radius: 8px;
+
+    border: none;
+
+    background: #333;
+
+    color: white;
+
+    cursor: pointer;
+}
+
+.control-btn.start {
+    background: var(--green);
+    color: #000;
+}
+
+.control-btn.danger {
+    background: var(--red);
+}
+
+.control-btn:hover {
+    opacity: .8;
+}
+
+/* ================= VOTE RESULTS ================= */
+
+.vote-result {
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 12px;
+
+    background: #222;
+
+    border-radius: 8px;
+
+    margin-bottom: 8px;
+}
+
+.vote-count {
+    color: var(--red);
+
+    font-weight: bold;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 700px) {
+
+    header {
+        padding: 0 15px;
+    }
+
+    .mode-buttons button {
+        padding: 8px;
+        font-size: 11px;
+    }
+
+    .logo {
+        font-size: 20px;
+    }
+
+    #moderator-view {
+        padding: 15px;
+    }
+
+    .game-title {
+        font-size: 60px;
+        letter-spacing: 8px;
+    }
+
+    .subtitle {
+        font-size: 18px;
+    }
+
+    .qr-code {
+        width: 210px;
+        height: 210px;
+    }
+}
