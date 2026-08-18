@@ -3,123 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mafia Game</title>
+
+    <title>MAFIA</title>
+
     <link rel="stylesheet" href="style.css">
+
+    <!-- QR CODE LIBRARY -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
 
-    <header>
-        <div class="logo">MAFIA</div>
+<header class="topbar">
 
-        <div class="mode-buttons">
-            <button onclick="showScreen('screen')">📺 Screen</button>
-            <button onclick="showScreen('player')">🎮 Player</button>
-            <button onclick="showScreen('moderator')">🛡️ Moderator</button>
+    <div class="logo">
+        MAFIA
+    </div>
+
+    <div class="mode-buttons">
+
+        <button onclick="showView('screen')">
+            📺 Screen
+        </button>
+
+        <button onclick="showView('player')">
+            🎮 Player
+        </button>
+
+        <button onclick="showView('moderator')">
+            🛡️ Moderator
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     PUBLIC SCREEN
+====================================================== -->
+
+<section id="screen-view" class="view active">
+
+    <div id="screen-content">
+
+        <div class="screen-lobby">
+
+            <h1>MAFIA</h1>
+
+            <p class="screen-subtitle">
+                Scan the QR code to join the game
+            </p>
+
+            <div class="qr-wrapper">
+
+                <div id="qrcode"></div>
+
+            </div>
+
+            <div class="game-code">
+                GAME CODE:
+                <strong id="display-game-code">
+                    MAFIA123
+                </strong>
+            </div>
+
+            <div id="screen-player-count">
+                Waiting for players...
+            </div>
+
+            <div id="screen-player-list">
+            </div>
+
         </div>
-    </header>
 
-    <main>
+    </div>
 
-        <!-- ================= SCREEN DISPLAY ================= -->
-        <section id="screen-view" class="view active">
+</section>
 
-            <div class="screen-container">
 
-                <div id="screen-content">
+<!-- =====================================================
+     PLAYER PHONE
+====================================================== -->
 
-                    <div class="qr-page">
+<section id="player-view" class="view">
 
-                        <div class="game-title">MAFIA</div>
+    <div class="phone">
 
-                        <p class="subtitle">
-                            Scan the QR code to join the game
-                        </p>
+        <div class="phone-top">
 
-                        <div class="qr-code">
-                            <div class="qr-pattern"></div>
-                        </div>
+            <strong>MAFIA</strong>
 
-                        <p class="join-code">
-                            Game Code:
-                            <strong id="game-code">MAFIA123</strong>
-                        </p>
+            <span>
+                ● ONLINE
+            </span>
 
-                        <div class="screen-status">
-                            Waiting for players...
-                        </div>
+        </div>
 
-                    </div>
+        <div id="player-content">
 
+            <div class="player-page">
+
+                <div class="player-icon">
+                    🎮
                 </div>
+
+                <h2>Join Game</h2>
+
+                <p>
+                    Enter your name to join.
+                </p>
+
+                <input
+                    id="player-name"
+                    type="text"
+                    maxlength="20"
+                    placeholder="Your name"
+                    autocomplete="off"
+                >
+
+                <button
+                    class="big-button"
+                    onclick="joinGame()"
+                >
+                    JOIN GAME
+                </button>
 
             </div>
 
-        </section>
+        </div>
+
+    </div>
+
+</section>
 
 
-        <!-- ================= PLAYER ================= -->
-        <section id="player-view" class="view">
+<!-- =====================================================
+     MODERATOR
+====================================================== -->
 
-            <div class="phone">
+<section id="moderator-view" class="view">
 
-                <div class="phone-header">
-                    <span>MAFIA</span>
-                    <span id="player-status">ONLINE</span>
-                </div>
+    <div class="moderator-container">
 
-                <div id="player-content">
+        <div class="moderator-title">
 
-                    <div class="player-card">
+            <div>
 
-                        <h2>Join Game</h2>
+                <h1>
+                    Moderator Panel
+                </h1>
 
-                        <input
-                            type="text"
-                            id="player-name"
-                            placeholder="Enter your name"
-                            maxlength="20"
-                        >
-
-                        <button class="primary-btn" onclick="joinGame()">
-                            JOIN GAME
-                        </button>
-
-                    </div>
-
-                </div>
+                <p>
+                    Control the Mafia game.
+                </p>
 
             </div>
 
-        </section>
+            <span class="secret-label">
+                🔒 SECRET
+            </span>
+
+        </div>
+
+        <div id="moderator-content">
+
+        </div>
+
+    </div>
+
+</section>
 
 
-        <!-- ================= MODERATOR ================= -->
-        <section id="moderator-view" class="view">
-
-            <div class="moderator-panel">
-
-                <div class="moderator-header">
-                    <h1>Moderator Panel</h1>
-                    <span class="secret-badge">🔒 SECRET</span>
-                </div>
-
-                <div id="moderator-content">
-
-                    <div class="empty-state">
-                        <h2>Waiting for players</h2>
-                        <p>Players will appear here when they join.</p>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-    <script src="script.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
