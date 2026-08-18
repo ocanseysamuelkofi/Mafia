@@ -5,466 +5,788 @@
 }
 
 :root {
+
     --red: #e50914;
-    --dark-red: #9d0208;
+    --dark-red: #8b0000;
+
     --black: #050505;
-    --dark: #111111;
-    --card: #1b1b1b;
-    --gray: #888;
+    --dark: #0d0d0d;
+    --card: #171717;
+
     --white: #ffffff;
-    --green: #00c853;
+    --gray: #999999;
+
+    --green: #00d26a;
     --blue: #2979ff;
     --yellow: #ffc107;
+
 }
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: var(--black);
-    color: white;
-    min-height: 100vh;
-}
-
-/* ================= HEADER ================= */
-
-header {
-    height: 70px;
-    background: #0d0d0d;
-    border-bottom: 1px solid #292929;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 0 30px;
-}
-
-.logo {
-    font-size: 28px;
-    font-weight: 900;
-    color: var(--red);
-    letter-spacing: 5px;
-}
-
-.mode-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.mode-buttons button {
-    background: #222;
-    color: white;
-    border: 1px solid #444;
-
-    padding: 10px 15px;
-    border-radius: 8px;
-
-    cursor: pointer;
-}
-
-.mode-buttons button:hover {
-    background: var(--red);
-}
-
-/* ================= VIEWS ================= */
-
-.view {
-    display: none;
-}
-
-.view.active {
-    display: block;
-}
-
-/* ================= SCREEN ================= */
-
-.screen-container {
-    min-height: calc(100vh - 70px);
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
 
     background:
         radial-gradient(
-            circle at center,
-            #320000 0%,
-            #090000 45%,
-            #000000 100%
+            circle at top,
+            #270000,
+            #050505 55%
         );
+
+    color: var(--white);
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    min-height: 100vh;
+
 }
 
-.qr-page {
-    text-align: center;
+
+/* =====================================================
+   TOP BAR
+====================================================== */
+
+.topbar {
+
+    height: 70px;
+
+    background: rgba(0,0,0,.9);
+
+    border-bottom:
+        1px solid #252525;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding:
+        0 25px;
+
 }
 
-.game-title {
-    font-size: clamp(70px, 10vw, 150px);
-    font-weight: 900;
-    letter-spacing: 20px;
+.logo {
+
     color: var(--red);
 
+    font-size: 28px;
+
+    font-weight: 900;
+
+    letter-spacing: 6px;
+
+}
+
+.mode-buttons {
+
+    display: flex;
+
+    gap: 8px;
+
+}
+
+.mode-buttons button {
+
+    background: #202020;
+
+    color: white;
+
+    border: 1px solid #444;
+
+    border-radius: 8px;
+
+    padding:
+        9px 13px;
+
+    cursor: pointer;
+
+}
+
+.mode-buttons button:hover {
+
+    background: var(--red);
+
+    border-color: var(--red);
+
+}
+
+
+/* =====================================================
+   VIEWS
+====================================================== */
+
+.view {
+
+    display: none;
+
+}
+
+.view.active {
+
+    display: block;
+
+}
+
+
+/* =====================================================
+   PUBLIC SCREEN
+====================================================== */
+
+#screen-view {
+
+    min-height:
+        calc(100vh - 70px);
+
+}
+
+#screen-content {
+
+    min-height:
+        calc(100vh - 70px);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+}
+
+.screen-lobby {
+
+    text-align: center;
+
+    width: 100%;
+
+    max-width: 800px;
+
+    padding: 30px;
+
+}
+
+.screen-lobby h1 {
+
+    font-size:
+        clamp(70px, 12vw, 150px);
+
+    letter-spacing:
+        20px;
+
+    color:
+        var(--red);
+
     text-shadow:
-        0 0 20px rgba(229, 9, 20, 0.6),
-        0 0 60px rgba(229, 9, 20, 0.3);
+        0 0 20px
+        rgba(229,9,20,.7),
+
+        0 0 70px
+        rgba(229,9,20,.25);
+
 }
 
-.subtitle {
+.screen-subtitle {
+
     font-size: 25px;
-    margin: 20px 0 30px;
+
     color: #ddd;
+
+    margin:
+        15px 0 30px;
+
 }
 
-.qr-code {
-    width: 260px;
-    height: 260px;
+.qr-wrapper {
 
     background: white;
 
-    margin: auto;
+    width: 280px;
+
+    height: 280px;
 
     padding: 15px;
 
-    position: relative;
+    margin: auto;
+
+    border-radius: 12px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    box-shadow:
+        0 0 40px
+        rgba(255,255,255,.12);
+
 }
 
-.qr-pattern {
-    width: 100%;
-    height: 100%;
+#qrcode {
 
-    background:
-        linear-gradient(90deg, #000 10px, transparent 10px),
-        linear-gradient(#000 10px, transparent 10px);
+    width: 250px;
 
-    background-size: 25px 25px;
+    height: 250px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
 }
 
-.join-code {
+#qrcode img {
+
+    width: 250px;
+
+    height: 250px;
+
+}
+
+.game-code {
+
     margin-top: 25px;
-    font-size: 22px;
-}
 
-.join-code strong {
-    color: var(--red);
-    letter-spacing: 3px;
-}
-
-.screen-status {
-    margin-top: 30px;
+    color: #aaa;
 
     font-size: 18px;
-    color: #aaa;
+
 }
 
-/* ================= PHONE ================= */
+.game-code strong {
+
+    color: var(--red);
+
+    font-size: 22px;
+
+    letter-spacing: 3px;
+
+}
+
+#screen-player-count {
+
+    margin-top: 30px;
+
+    color: #aaa;
+
+    font-size: 20px;
+
+}
+
+#screen-player-list {
+
+    margin-top: 15px;
+
+    font-size: 18px;
+
+    color: #ddd;
+
+}
+
+
+/* =====================================================
+   GAME SCREEN
+====================================================== */
+
+.game-screen {
+
+    text-align: center;
+
+    padding: 40px;
+
+    width: 100%;
+
+}
+
+.game-screen h1 {
+
+    font-size:
+        clamp(50px, 9vw, 110px);
+
+    color: var(--red);
+
+    text-transform: uppercase;
+
+}
+
+.game-screen p {
+
+    font-size: 28px;
+
+    color: #ddd;
+
+    margin-top: 20px;
+
+}
+
+.big-screen-icon {
+
+    font-size: 100px;
+
+    margin-top: 30px;
+
+}
+
+
+/* =====================================================
+   PHONE
+====================================================== */
 
 #player-view {
-    min-height: calc(100vh - 70px);
+
+    min-height:
+        calc(100vh - 70px);
 
     display: none;
 
     justify-content: center;
+
     align-items: center;
 
-    background: #060606;
 }
 
 #player-view.active {
+
     display: flex;
+
 }
 
 .phone {
+
     width: 390px;
-    min-height: 650px;
 
-    background: #111;
+    min-height: 680px;
 
-    border: 8px solid #282828;
+    background: #101010;
+
+    border:
+        8px solid #292929;
+
     border-radius: 35px;
 
     overflow: hidden;
 
     box-shadow:
-        0 20px 60px rgba(0, 0, 0, .6);
+        0 25px 80px
+        rgba(0,0,0,.7);
+
 }
 
-.phone-header {
+.phone-top {
+
     height: 60px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    padding: 0 20px;
 
     background: var(--red);
 
-    font-weight: bold;
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding:
+        0 20px;
+
 }
 
-#player-status {
-    font-size: 11px;
+.phone-top span {
+
+    font-size: 10px;
+
 }
 
-.player-card {
-    padding: 35px 25px;
+.player-page {
+
     text-align: center;
+
+    padding: 40px 25px;
+
 }
 
-.player-card h2 {
+.player-icon {
+
+    font-size: 65px;
+
+    margin-bottom: 15px;
+
+}
+
+.player-page h2 {
+
     font-size: 30px;
-    margin-bottom: 30px;
+
+    margin-bottom: 10px;
+
 }
 
-.player-card input {
+.player-page p {
+
+    color: var(--gray);
+
+    margin-bottom: 25px;
+
+}
+
+.player-page input {
+
     width: 100%;
 
     padding: 16px;
 
-    background: #222;
-    border: 1px solid #444;
+    border:
+        1px solid #444;
 
     border-radius: 10px;
 
+    background: #202020;
+
     color: white;
+
+    outline: none;
 
     font-size: 17px;
 
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+
 }
 
-.primary-btn {
+.player-page input:focus {
+
+    border-color: var(--red);
+
+}
+
+.big-button {
+
     width: 100%;
 
     padding: 16px;
 
-    background: var(--red);
-
     border: none;
+
     border-radius: 10px;
+
+    background: var(--red);
 
     color: white;
 
-    font-size: 16px;
     font-weight: bold;
 
+    font-size: 16px;
+
     cursor: pointer;
+
 }
 
-.primary-btn:hover {
+.big-button:hover {
+
     background: #ff1b25;
+
 }
 
-/* ================= PLAYER STATES ================= */
 
-.player-role {
-    margin: 30px 0;
+/* =====================================================
+   PLAYER ROLE
+====================================================== */
+
+.role-card {
+
+    margin: 30px 20px;
 
     padding: 30px 15px;
 
     border-radius: 15px;
 
     background: #191919;
+
+    text-align: center;
+
 }
 
-.player-role.mafia {
-    border: 2px solid var(--red);
+.role-card.mafia {
+
+    border:
+        2px solid var(--red);
 
     box-shadow:
-        0 0 30px rgba(229, 9, 20, .2);
+        0 0 30px
+        rgba(229,9,20,.2);
+
 }
 
-.player-role.innocent {
-    border: 2px solid #333;
+.role-card.innocent {
+
+    border:
+        2px solid #333;
+
 }
 
 .role-icon {
-    font-size: 60px;
+
+    font-size: 65px;
+
     margin-bottom: 15px;
+
 }
 
-.role-name {
-    font-size: 25px;
+.role-title {
+
+    font-size: 24px;
+
     font-weight: bold;
+
 }
 
-.player-message {
+.role-description {
+
     color: #aaa;
-    margin-top: 10px;
+
+    margin-top: 12px;
+
     line-height: 1.5;
+
 }
 
-/* ================= PLAYER ACTIONS ================= */
 
-.player-actions {
-    padding: 20px;
+/* =====================================================
+   PLAYER CHOICES
+====================================================== */
+
+.choice-container {
+
+    padding:
+        0 20px 25px;
+
 }
 
-.player-actions h3 {
+.choice-container h3 {
+
     margin-bottom: 15px;
+
 }
 
-.player-choice {
+.choice-button {
+
     display: block;
 
     width: 100%;
 
     padding: 15px;
+
     margin-bottom: 10px;
+
+    border:
+        1px solid #444;
 
     border-radius: 10px;
 
-    border: 1px solid #444;
-
-    background: #1d1d1d;
+    background: #202020;
 
     color: white;
 
     text-align: left;
 
+    font-size: 16px;
+
     cursor: pointer;
+
 }
 
-.player-choice:hover {
+.choice-button:hover {
+
     border-color: var(--red);
+
+    background: #2a0a0a;
+
 }
 
-.player-choice.selected {
-    background: var(--red);
-    border-color: var(--red);
-}
 
-.dead {
+/* =====================================================
+   DEAD PLAYER
+====================================================== */
+
+.dead-player {
+
     text-align: center;
-    padding: 50px 20px;
+
+    padding: 70px 20px;
+
 }
 
-.dead-icon {
-    font-size: 80px;
-    margin-bottom: 20px;
+.dead-player .skull {
+
+    font-size: 90px;
+
 }
 
-.dead h2 {
+.dead-player h2 {
+
     color: var(--red);
+
+    margin-top: 20px;
+
 }
 
-/* ================= MODERATOR ================= */
+.dead-player p {
+
+    color: #aaa;
+
+    margin-top: 10px;
+
+}
+
+
+/* =====================================================
+   MODERATOR
+====================================================== */
 
 #moderator-view {
-    padding: 30px;
+
+    padding:
+        35px 20px;
+
 }
 
-.moderator-panel {
+.moderator-container {
+
     max-width: 1100px;
+
     margin: auto;
+
 }
 
-.moderator-header {
+.moderator-title {
+
     display: flex;
 
     justify-content: space-between;
+
     align-items: center;
 
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+
 }
 
-.moderator-header h1 {
-    font-size: 30px;
+.moderator-title h1 {
+
+    font-size: 32px;
+
 }
 
-.secret-badge {
-    background: #461010;
+.moderator-title p {
 
-    border: 1px solid var(--red);
+    color: #888;
 
-    padding: 8px 15px;
+    margin-top: 5px;
+
+}
+
+.secret-label {
+
+    padding:
+        8px 15px;
 
     border-radius: 20px;
 
-    color: #ff6970;
+    color: #ff6269;
 
-    font-size: 13px;
-}
+    background: #360b0b;
 
-.empty-state {
-    text-align: center;
+    border:
+        1px solid var(--red);
 
-    padding: 80px 20px;
-
-    background: var(--card);
-
-    border-radius: 15px;
-
-    color: #aaa;
-}
-
-/* ================= PLAYER LIST ================= */
-
-.player-list {
-    display: grid;
-
-    grid-template-columns:
-        repeat(auto-fit, minmax(220px, 1fr));
-
-    gap: 15px;
-
-    margin-bottom: 30px;
-}
-
-.player-item {
-    background: var(--card);
-
-    border: 1px solid #333;
-
-    border-radius: 12px;
-
-    padding: 20px;
-
-    display: flex;
-
-    justify-content: space-between;
-    align-items: center;
-}
-
-.player-item.dead {
-    opacity: .4;
-}
-
-.player-name {
-    font-weight: bold;
-}
-
-.player-role-small {
     font-size: 12px;
-    color: var(--gray);
-}
 
-/* ================= MODERATOR CARDS ================= */
+}
 
 .control-card {
+
     background: var(--card);
 
-    border: 1px solid #333;
+    border:
+        1px solid #333;
 
     border-radius: 15px;
 
     padding: 25px;
 
     margin-bottom: 20px;
+
 }
 
 .control-card h2 {
+
     margin-bottom: 15px;
+
 }
 
 .secret-mafia {
+
     color: var(--red);
 
-    font-size: 25px;
+    font-size: 28px;
 
     font-weight: bold;
+
+}
+
+.player-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(200px,1fr)
+        );
+
+    gap: 12px;
+
+}
+
+.player-item {
+
+    background: #222;
+
+    border:
+        1px solid #383838;
+
+    padding: 18px;
+
+    border-radius: 10px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+}
+
+.player-item.dead {
+
+    opacity: .35;
+
+}
+
+.player-item-name {
+
+    font-weight: bold;
+
+}
+
+.player-item-role {
+
+    color: #888;
+
+    font-size: 11px;
+
+    margin-top: 5px;
+
 }
 
 .control-buttons {
+
     display: flex;
 
     flex-wrap: wrap;
@@ -472,89 +794,204 @@ header {
     gap: 10px;
 
     margin-top: 20px;
+
 }
 
-.control-btn {
-    padding: 13px 20px;
-
-    border-radius: 8px;
+.control-button {
 
     border: none;
+
+    padding:
+        13px 20px;
+
+    border-radius: 9px;
 
     background: #333;
 
     color: white;
 
     cursor: pointer;
+
+    font-weight: bold;
+
 }
 
-.control-btn.start {
+.control-button.start {
+
     background: var(--green);
+
     color: #000;
+
 }
 
-.control-btn.danger {
+.control-button.danger {
+
     background: var(--red);
+
 }
 
-.control-btn:hover {
-    opacity: .8;
+.control-button:hover {
+
+    opacity: .85;
+
 }
 
-/* ================= VOTE RESULTS ================= */
+.empty {
 
-.vote-result {
+    background: var(--card);
+
+    border:
+        1px solid #333;
+
+    border-radius: 15px;
+
+    text-align: center;
+
+    padding: 70px 20px;
+
+    color: #999;
+
+}
+
+
+/* =====================================================
+   VOTES
+====================================================== */
+
+.vote-row {
+
     display: flex;
 
     justify-content: space-between;
 
-    padding: 12px;
-
     background: #222;
+
+    padding: 14px;
 
     border-radius: 8px;
 
     margin-bottom: 8px;
+
 }
 
-.vote-count {
+.vote-number {
+
     color: var(--red);
 
     font-weight: bold;
+
 }
 
-/* ================= RESPONSIVE ================= */
 
-@media (max-width: 700px) {
+/* =====================================================
+   RESPONSIVE
+====================================================== */
 
-    header {
-        padding: 0 15px;
-    }
+@media(max-width:700px) {
 
-    .mode-buttons button {
-        padding: 8px;
-        font-size: 11px;
+    .topbar {
+
+        height: auto;
+
+        min-height: 65px;
+
+        padding: 10px;
+
+        gap: 10px;
+
     }
 
     .logo {
-        font-size: 20px;
+
+        font-size: 19px;
+
+        letter-spacing: 3px;
+
     }
 
-    #moderator-view {
-        padding: 15px;
+    .mode-buttons {
+
+        gap: 4px;
+
     }
 
-    .game-title {
+    .mode-buttons button {
+
+        padding:
+            7px;
+
+        font-size: 10px;
+
+    }
+
+    .screen-lobby {
+
+        padding: 20px;
+
+    }
+
+    .screen-lobby h1 {
+
         font-size: 60px;
+
         letter-spacing: 8px;
+
     }
 
-    .subtitle {
+    .screen-subtitle {
+
         font-size: 18px;
+
     }
 
-    .qr-code {
-        width: 210px;
-        height: 210px;
+    .qr-wrapper {
+
+        width: 240px;
+
+        height: 240px;
+
     }
+
+    #qrcode {
+
+        width: 210px;
+
+        height: 210px;
+
+    }
+
+    #qrcode img {
+
+        width: 210px;
+
+        height: 210px;
+
+    }
+
+    .phone {
+
+        width: 100%;
+
+        max-width: 390px;
+
+        min-height: 650px;
+
+        border-radius: 25px;
+
+    }
+
+    .moderator-title {
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+    .moderator-title h1 {
+
+        font-size: 24px;
+
+    }
+
 }
